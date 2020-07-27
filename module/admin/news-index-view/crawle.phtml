@@ -1,0 +1,225 @@
+<section class="content">
+    <?php
+    $params = \Base\ClassRoute::getArrParams();
+
+    $pid = qqgetIdFromRand('pd169339');
+
+    echo "<br/>URL sample: <input type='text' style='width: 500px; background-color: #eee' value='https://filehippo.com/web_avast_business_antivirus/'> ";
+
+    echo "<br/>";
+
+    $transFromCache = 0;
+    $lionk = null;
+    if (isset($_POST['urlin'])) {
+        $lionk = $_POST['urlin'];
+
+        if (!\clsValidate::isURL($lionk)) {
+            bl("Not valid url? $lionk");
+            goto next1;
+
+        } else {
+
+            $domain = ctoolUrl::getDomainFromUrl($lionk);
+
+            if($domain!='filehippo.com'){
+
+                bl("Error: Domain = $domain, Not  filehippo?");
+
+                goto next1;
+            }
+
+            //$lionk = "https://filehippo.com/download_avast-business-cloudcare/";
+
+            $html0 = $html = file_get_contents($lionk);
+//echo "<br/>$cont";
+
+            if(preg_match("/<title>(.+)<\/title>/i", $html, $matches))
+                $title =  $matches[1];
+            else
+                $title =  "Not found title, ".microtime(1);
+
+            echo "<br/>Title = $title";
+
+            $dom = new DOMDocument();
+            @$dom->loadHTML('<?xml encoding="utf-8" ?>' . $html);
+            $xpath = new DOMXPath($dom);
+            $div = $xpath->query('//article[@class="program-description"]');
+            if(!$div = $div->item(0)){
+                bl("Not valid link ? article[@class=\"program-description ");
+            }
+            else {
+
+                $ret = $dom->saveXML($div);
+                $ret = trim($ret);
+
+                $nChar = strlen($ret);
+
+                $md5 = md5($ret);
+
+                $foldStore = USER_FILE_UPLOAD_LOCATION . "/" . DOMAIN_MAIN . "/translate_cache";
+                $fileStore = $foldStore . "/$md5";
+                if (!file_exists($foldStore))
+                    mkdir($foldStore, 0755, 1);
+                if (!file_exists($foldStore))
+                    die("Not found folder store?");
+
+                if (file_exists($fileStore)) {
+                    $transFromCache = 1;
+                    $translateOK = file_get_contents($fileStore);
+                } else {
+                    $translateOK = ClassTranslate::translateOK($ret);
+                    outputW($fileStore, $translateOK);
+                }
+
+                $data = new \Base\ModelDataFile();
+                if(!$data->getOneWhere_("refer = '$lionk'")){
+                    $data->refer = $lionk;
+                    $data->parent = $pid;
+                    $data->userid = getAdminUserId();
+                    $data->content_en = $ret;
+                    $data->content = $translateOK;
+                    $data->name = $title;
+                    $data->insertDbMe();
+                }
+                else{
+
+                    if(!$data->name) {
+                        $data->name = $title;
+                        $data->updateDbMe();
+                    }
+                    if(!$data->parent)
+                        $data->parent = $pid;
+
+                    $link1 = $data->getLinkFriendlyAndInsertRoute();
+                    echo "<br/> <a target='_blank' href='/$link1'> Đã save với DataId " . $data->id . '</a>';
+                    if(!$data->content)
+                        $data->content = $ret;
+                }
+            }
+        }
+    }
+
+    //echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+    //print_r($data);
+    //echo "</pre>";
+
+    next1:
+    ?>
+
+    <br>
+    <br>
+    <form method="post" action="">
+        Enter filehippo Url: <input type="text" name="urlin" value="<?php echo $lionk ?>" style="width: 500px">
+        <br>
+        <button type="submit">Get Content and Translate</button>
+    </form>
+
+    <?php
+    if($lionk)
+        echo " <a target='_blank' href='$lionk'> $lionk </a>";
+    ?>
+
+    <?php
+    if(isset($md5)) {
+        echo "<br/> nChar = $nChar";
+        if($transFromCache)
+            echo " (Get Translated From Mongo!)";
+        echo "<table border='1'> ";
+
+        if($data->content)
+            $contentOk = $data->content;
+
+        echo "<tr>";
+        echo "<td><b>Bản English</b></td>";
+        echo "<td><b>Bản dịch của bạn</b></td>";
+        echo "<td> <button onclick='copyBanDich()'> <-- Copy sang Kia</button> <b>Bản dịch Auto</b>  </td>";
+        echo "</tr>";
+        echo "<tr>";
+        echo "<td style='; background-color: grey'></td>";
+        $summry = "[nhập tóm tắt nội dung ở đây...]";
+        if($data->summary0)
+            $summry = $data->summary0;
+
+        echo "<td style='background-color: white; width: 30%; border: 1px solid red; padding: 5px' placeholder='enter sumary here' contenteditable='true' valign='top' id='summary_ok'>$summry</td>";
+        echo "<td style='; background-color: grey'></td>";
+        echo "</tr>";
+        echo "<tr>";
+        echo "<td style='width: 30%; border: 1px solid red; background-color: #eee; padding: 5px' valign='top'>
+$ret </td>";
+        echo "<td style='width: 30%; border: 1px solid red; background-color: white; color: darkblue; padding: 5px'  contenteditable='true' valign='top' id='content_ok'>$contentOk</td>";
+        echo "<td style='width: 30%; border: 1px solid red; background-color: #eee; padding: 5px' valign='top'  id='content_auto_trans'>$translateOK</td>";
+        echo "</tr>";
+
+        echo "</table>";
+        echo "<br/>";
+        echo "<hr/>";
+        $dom = new DOMDocument();
+        @$dom->loadHTML('<?xml encoding="utf-8" ?>' . $html);
+        $xpath = new DOMXPath($dom);
+        $div = $xpath->query('//div[@class="program-gallery js-gallery"]');
+        $div = $div->item(0);
+        $ret = $dom->saveXML($div);
+//echo "<br/>$ret";
+
+        $dom = new DOMDocument();
+        @$dom->loadHTML('<?xml encoding="utf-8" ?>' . $ret);
+        foreach ($dom->getElementsByTagName('a') as $node) {
+            $link = $node->getAttribute("href");
+            echo "<br/>";
+            echo "<img style='border: 2px solid red'  src='$link'>";
+            echo "<br/> link = $link";
+        }
+    }
+
+    ?>
+
+    <script>
+
+        function copyBanDich() {
+            $("#content_ok").html($("#content_auto_trans").html());
+        }
+
+        function saveData() {
+//        alert("Save dataa");
+
+            var data1 = {};
+
+            data1['content'] = $("#content_ok").html();;
+            data1['summary0'] = $("#summary_ok").html();;
+
+            var urlPost = '/a_p_i/member-data/save/?' + "&id=" + '<?php echo $data->id ?>';
+            console.log(" urlPost Save = " + urlPost);
+
+            showWaittingIcon();
+            $.post(urlPost, data1, function (result) {
+                hideWaittingIcon();
+
+                if (!ClassApi.checkReturnApi(result))
+                    return;
+
+                if (result.payload == 0)
+                    showToastWarningBottom("Nothing update?");
+                else
+                    showToastInfoBottom("Save Done!");
+
+            });
+        }
+
+    </script>
+    <?php
+    if(isset($data)) {
+        ?>
+
+        <i title="save item" onclick="saveData()" style="position: fixed; right: 10px; top: 60px ; font-size: 40px; color: red"
+           class="fa fa-floppy-o"></i>
+        <a title="view public" target="_blank" href="<?php echo $data->getLinkFriendlyUrl('/data') ?>">
+            <i style="position: fixed; right: 10px; top: 110px ; font-size: 40px; color: darkgreen" class="fa fa-link"></i>
+        </a>
+
+        <?php
+    }
+    ?>
+
+
+
+</section>

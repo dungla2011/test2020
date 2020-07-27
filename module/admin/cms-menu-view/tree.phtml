@@ -1,0 +1,152 @@
+<link rel="stylesheet" type="text/css" href="<?php echo \Base\ClassRoute::getBaseUri()?>/public/jtree/stylesheet.css" media="screen">
+<link rel="stylesheet" type="text/css" href="<?php echo \Base\ClassRoute::getBaseUri()?>/public/jtree/github-dark.css" media="screen">
+<!--<script src="<?php echo \Base\ClassRoute::getBaseUri()?>/template/admin1/bower_components/jquery/dist/jquery.min.js"></script>-->
+<script src="<?php echo \Base\ClassRoute::getBaseUri()?>/public/jtree/jquery-sortable-lists.js"></script>
+<script type="text/javascript">
+    $(function()
+    {
+        var optionsPlus = {
+            isAllowed: function(currEl, hint, target)
+            {
+                if(hint.parents('li').first().data('module') === 'c' && currEl.data('module') !== 'c')
+                {
+                    hint.css('background-color', 'black');
+                    return false;
+                }
+                else
+                {
+                    hint.css('background-color', '#bbf');
+                    return true;
+                }
+            },
+            insertZonePlus: true,
+            placeholderCss: {'background-color': '#ddd'},
+            hintCss: {'background-color':'#bbf'},
+            opener: {
+                active: true,
+                as: 'html',  // if as is not set plugin uses background image
+                close: '<i class="fa fa-minus c3"></i>',
+                open: '<i class="fa fa-plus"></i>',
+                openerCss: {
+                    'display': 'inline-block',
+                    'float': 'left',
+                    'margin-left': '-23px',
+                    'margin-right': '5px',
+                    'font-size': '1em'
+                }
+            },
+            onChange: function( cEl )
+            {
+                console.log( 'onChange1 ' + JSON.stringify(cEl));
+            },
+            complete: function( cEl )
+            {
+                var str1 = $('#sTreePlus').sortableListsToString();
+                var str2 = $('#sTreePlus').sortableListsToArray();
+                var str3 = $('#sTreePlus').sortableListsToHierarchy();
+
+                console.log( 'complete1 ' + JSON.stringify(cEl));
+                console.log( "str1 =  "  + str1);
+                console.log( "str2 =  "  + str2);
+                console.log( "str3 =  "  + str3);
+            },
+
+        };
+
+        $('#sTreePlus').sortableLists( optionsPlus );
+    });
+
+</script>
+
+<br>
+<div id="tree_zone">
+    <section id="main_content">
+        <ul  class="sTree2 listsClass" id="sTree2">
+            <li> <div> a1 </div>
+                <ul>
+                    <li> <div> a11 </div>
+                        <ul>
+                            <li> <div> a111 </div>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+            </li>
+            <li> <div> a2 </div>
+                <ul>
+                    <li> <div> a21 </div>
+                    </li>
+                    <li> <div> a22 </div>
+                    </li>
+                </ul>
+            </li>
+        </ul>
+    </section>
+</div>
+
+
+
+<section class="content">
+    <div class="box" ng-controller="cms_menu_index" id="cms_menu_index_div" style="display: yes">
+
+        <div class="box-body">
+            <div>
+                Chọn 1 Menu dưới đây:<br/>
+                <span ng-repeat="group in group_menu_names" style="padding: 10px; background: snow; margin: 5px; padding: 5px">
+            <input ng-checked="$index === 0 ? true : false" type="radio" name="group_menu" id="memu_{{group.id}}" value="{{group.id}}" ng-click="groupMenuSelected(group.id)"> <label  title="{{group.id}}" for="memu_{{group.id}}">{{group.cat_name}} </label>
+        </span>
+            </div>
+
+            <!-- Nested node template -->
+            <script type="text/ng-template" id="nodes_renderer.html">
+                <div ui-tree-handle class="tree-node tree-node-content">
+                    <a class="btn btn-success btn-xs" ng-if="menu.menus && menu.menus.length > 0" data-nodrag ng-click="toggle(this)"><span
+                                class="glyphicon"
+                                ng-class="{
+          'glyphicon-chevron-right': collapsed,
+          'glyphicon-chevron-down': !collapsed
+        }"></span></a>
+                    {{menu.title}}
+                    <a class="pull-right btn btn-danger btn-xs" data-nodrag ng-click="remove(this)"><span
+                                class="glyphicon glyphicon-remove"></span></a>
+                    <a class="pull-right btn btn-primary btn-xs" data-nodrag ng-click="newSubItem(this)" style="margin-right: 8px;"><span
+                                class="glyphicon glyphicon-plus"></span></a>
+                </div>
+                <ol ui-tree-nodes="" ng-model="menu.menus" ng-class="{hidden: collapsed}">
+                    <li ng-repeat="menu in menu.menus" ui-tree-node ng-include="'nodes_renderer.html'">
+                    </li>
+                </ol>
+            </script>
+
+            <div class="row">
+                <div class="col-sm-12">
+                    <button ng-click="expandAll()">Expand all</button>
+                    <button ng-click="collapseAll()">Collapse all</button>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-sm-6">
+                    <div ui-tree id="tree-root">
+                        <ol ui-tree-nodes ng-model="data">
+                            <li ng-repeat="menu in data" ui-tree-node ng-include="'nodes_renderer.html'"></li>
+                        </ol>
+                    </div>
+                </div>
+
+                <div class="col-sm-6">
+                    <div class="info">
+                        {{info}}
+                    </div>
+                    <pre id='datatest1' class="code" ng-change="changeData()" ng-model="data">{{ data | json }}</pre>
+                </div>
+            </div>
+
+            <textarea id='datatest2'>
+{{ data}}
+        </textarea>
+
+
+        </div>
+    </div>
+</section>

@@ -1,0 +1,513 @@
+<style>
+    div[id^='to_update_']{
+        max-height:600px;
+    }
+</style>
+
+<?php
+require_once "application/module/admin/data-index2-view/setting.php";
+require_once "application/module/admin/data-index2-view/header.phtml";
+require_once "application/block/table_tree_mng/view.php";
+
+
+?>
+
+<section class="content">
+<?php
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//LINK DATA/////////////////////////////////////////////////////////////////////////////////////////////////////
+$item_id = $obj1->getId();
+if (1) {
+    ?>
+    <div style="margin-top: 10px; overflow: auto">
+
+        <span style="font-size: 16px; font-weight: bold; color: "> DataLinkList1</span>
+
+        <?php
+        if(\clsValidate::isURL($obj1->refer)){
+
+            echo " Refer link: <b> <a target='_blank' href='$obj1->refer'>$obj1->refer</a></b>";
+            $cr = new \Base\ModelDataCrawle();
+            if($cr->getOneWhere_(" refer = '$obj1->refer'")){
+                echo " | <a href=''>Crawle ID = $cr->id  </a>, LastStart/Done: $cr->last_start / ";
+                if($cr->last_start < $cr->last_done )
+                    echo "$cr->last_done";
+            }
+        }
+
+        $arrName = [];
+        ?>
+
+        <table id="tbl_list_link" class="glx01 table table-bordered pagin-table" style="">
+            <tr>
+                <th>STT</th>
+                <th>Thứ <br> tự </th>
+                <th>Tên link <br>(Option)</th>
+                <th>Thuyết minh?</th>
+                <th>Refer link</th>
+                <th>CreateTime <br>/ Modified</th>
+                <th>Summary</th>
+                <th>IDCloud</th>
+                <!--                <th>FileNamex</th>-->
+                <th>Enable</th>
+                <th></th>
+            </tr>
+            <tbody id="sort_me">
+            <?php
+            if (isset($item_id)) {
+                echo "<tr id='tr_add_row_link' style='background-color: #ccccff'>";
+                echo "<td> </td>";
+                echo "<td></td>";
+                echo "<td><input style='width: 100px' placeholder='Enter new name of link' id='link_name_new' type='text' value=''></td>";
+
+
+                echo "<td></td>";
+
+                echo "<td><input placeholder='Refer link' id='link_refer' type='text' value=''></td>";
+                echo "<td></td>";
+                echo "<td><textarea style='max-height: 100px; width: 200px' placeholder='Enter summary' id='link_summary_new' type='text' ></textarea></td>";
+
+                echo "<td><input placeholder='Enter id cloud file' id='link_idcloud_new' type='text' value=''></td>";
+
+                echo "<td></td>";
+
+                echo "<td> <button  id='add_new_link' class='btn btn-info' onclick='saveOrAddDataLink()'>
+<i class='fa fa-plus'></i> 
+ADD LINK 
+</button> </td>";
+                echo "</tr>";
+
+                $objLink = new \Base\ModelDataLink();
+                if ($arr = $objLink->getArrayWhereSql_(" item_id = $item_id order by orders DESC,  id DESC")) {
+                    $c = 0;
+                    foreach ($arr AS $link) {
+
+                        $c++;
+
+                        if ($link instanceof \Base\ModelDataLink);
+
+                        $padNotHaveCloud = "";
+                        if(!$link->link){
+                            $padNotHaveCloud = " style='color: red;'";
+                        }
+
+                        $padPlay = '';
+                        if(ClassSetting::$siteId == 35)
+                            if($link->link || strstr($link->summary,'/ok.ru/video/')){
+                                $l1 = $obj1->getLinkFriendlyUrl2('phim');
+                                $padPlay = "<a title='Xem phim Tập: $link->name' target='_blank' href='$l1?tap_id=".qqgetRandFromId($link->id)."'> <i class='fa fa-2x fa-play-circle-o'></i> </a>";
+                            }
+                            else
+                                $padPlay = "<i class='fa fa-2x fa-question-circle-o'></i>";
+
+                        echo "<tr $padNotHaveCloud id='tr_id_link_$link->id'>";
+                        echo "<td> <a href='/admin/data-link/view/id/$link->id' target='_blank'> $c <br> <span style='font-size: smaller'>$link->id </span> </a></td>";
+                        echo "<td align='center'>".@$link->orders." </td>";
+
+
+
+                        $padTrungTen = '';
+                        if($link->status == 1)
+                            if(!in_array($link->name, $arrName)){
+                                $arrName[] = $link->name;
+                            }
+                            else{
+                                $padTrungTen = " <div style='color: red'> Trùng tên rồi Bro!</div>";
+                            }
+
+                        echo "<td><input style='font-size: x-small' id='name_of_id_$link->id' type='text' value='$link->name'> $padPlay $padTrungTen <br> <span style='font-size: x-small'>$link->name</span></td>";
+
+                        if($link->type)
+                            echo "<td align='center'> Thuyết minh!</td>";
+                        else
+                            echo "<td align='center'>  </td>";
+
+                        $paddownload = '';
+
+                        $filepathX = "/share/film_".DOMAIN_MAIN.".$link->id.mp4";
+                        $filepathX = $filepathX0 = "/mnt/sdb1/film_".DOMAIN_MAIN.".$link->id";
+                        $filepathX1 = "/mnt/sdb1/film_".DOMAIN_MAIN.".$link->id.mp4";
+
+                        if(!$link->link){
+                            if(file_exists($filepathX1)){
+                                $filepathX = $filepathX1;
+                            }
+
+                            if(file_exists($filepathX)){
+                                if(filesize($filepathX) == 0)
+                                    $paddownload = "<br>Download error, size = 0";
+                                else {
+                                    $paddownload = ByteSize(filesize($filepathX));
+                                    if(filemtime($filepathX) < time() - 10)
+                                        $paddownload = "<br>Download Done, watting for save to cloud: $paddownload ...";
+                                    else{
+                                        $paddownload = "<br>Downloading: $paddownload ...";
+                                    }
+                                }
+                            }
+                            if(file_exists($filepathX0)){
+                                $paddownload = ByteSize(filesize($filepathX0));
+                                $paddownload = "<br>Downloading: $paddownload ...";
+                            }
+                        }
+
+                        $padDlInfoLast = "";
+                        if(!$link->link)
+                            $padDlInfoLast = "<br><span style='font-size: x-small; color: blue;'> Last Log: ... ". substr($link->log, -100)."...</span>";
+
+                        $padByUser = '';
+                        if(!$link->refer_remote){
+                            $padByUser = "<i> UploadedBy: " . \Base\ModelUserCms::getUserInfoEx($link->userid, 'email') ."</i> <br/>
+<input placeholder='Refer link' id='refer_remote_save_$link->id' type='text' value=''>";
+
+                        }
+
+                        if($link->refer_remote)
+                            echo "<td><a target='_blank' href='$link->refer_remote' title='$link->refer_remote'> ".\Base\ClassString::substr_fit_word(basename($link->refer_remote),0,80)." </a> $paddownload $padDlInfoLast <br/>  <span style='color: gray; font-size: smaller'>$link->extra1 <span> </td>";
+                        else {
+                            echo "<td> $padDlInfoLast $padByUser </td>";
+                        }
+
+                        echo "<td style='font-size: x-small'>$link->createdAt <br> $link->modifiedAt </td>";
+
+                        echo "<td><textarea style='max-height: 100px; width: 200px' id='summary_of_id_$link->id' type='text' >$link->summary</textarea> </td>";
+
+                        $padSize = "";
+                        $id0 = $link->link;
+                        if(strlen($link->link) > 10){
+                            $id0 = d_f_h_1b($link->link);
+
+
+                        }
+                        $objFile = new \Base\ModelCloudFile();
+
+                        if($id0)
+                            if($objFile->getOne($id0)){
+                                $padSize = "<br>".ByteSize($objFile->size);
+//                            $pad = \Base\ClassString::substr_fit_word($objFile->name, 0, 100)."..." ;
+//                            $pad = "<a target='_blank' href='/admin/cloud-file/view/id/".@$objFile->id."'>".$pad."</a>";
+//                            //echo "$pad";
+//                            echo "<td title='".@$objFile->name."'> $pad </td>";
+                            }else {
+//                            $pad = "Not found cloud file? \n ($link->link / $link->refer_remote / $link->name )";
+//                            echo "<td title='".@$objFile->name."'> <textarea  rows='2'>$pad</textarea></td>";
+                            }
+
+                        //<br> Size = ".ByteSize($);
+                        $padLinkCl = "x";
+                        if(!\clsValidate::isURL($link->link)){
+                            if(strlen($link->link) < 10){
+                                if(is_numeric($link->link)){
+                                    $padLinkCl = "<a target='_blank' href='/admin/cloud-file/view/page/1/name/$link->link'> LINK </a> $padSize";
+                                }
+                            }
+                            else{
+                                $x = dfh1b($link->link);
+                                $padLinkCl = "<a  target='_blank' href='/admin/cloud-file/view/page/1/name/$x'> LINK </a> $padSize";
+                            }
+                        }
+                        else{
+                            $padLinkCl = "<a href='$link->link' target='_blank'>[L]</a>";
+                        }
+
+                        echo "<td><input id='link_of_id_$link->id' type='text' value='$link->link'> $padLinkCl </td>";
+
+
+
+                        $pad = '';
+                        if($link->status)
+                            $pad = 'checked';
+
+                        echo "<td align='center'><input $pad type='checkbox' id='link_enable_$link->id' onclick='enableLink($link->id)'> </td>";
+
+
+                        echo "<td><button  class='btn btn-warning' onclick='saveOrAddDataLink($link->id)'>SAVE</button>  </td>";
+                        echo "</tr>";
+                    }
+                    $c++;
+                }
+
+
+            }
+            ?>
+            </tbody>
+        </table>
+    </div>
+    <?php
+}    ?>
+
+<script>
+
+    //$('tbody').sortable({
+    $('#sort_me').sortable({
+        stop: function (event, ui) {
+
+            console.log("sortable Stop...");
+
+            var strOrderLink = '';
+            $("#tbl_list_link").find("tr").each(function(){
+
+                if(this.id.indexOf('tr_id_link_') >=0){
+                    var idx = this.id;
+                    var idxOK = idx.replace('tr_id_link_' , '');
+                    console.log("OK..." + idxOK);
+                    strOrderLink += idxOK + ",";
+                }
+//                IDs.push(this.id);
+            });
+
+            if(strOrderLink.length == 0){
+                return;
+            }
+
+            console.log(" str = " + strOrderLink);
+            var urlPost = '/a_p_i/member-data-link/change-order/str_id_order/' + strOrderLink;
+
+            console.log(" urlPostx = " + urlPost);
+
+            showWaittingIcon();
+            $.post(urlPost, {}, function(result) {
+                hideWaittingIcon();
+
+                if (!ClassApi.checkReturnApi(result))
+                    return;
+                if (result.payload == 0)
+                    showToastWarningBottom("Nothing update?");
+                else
+                    showToastInfoBottom("Done?");
+            });
+
+
+
+        }
+    });
+
+
+    $(document).ready(function(){
+
+        $("#add_new_link").click(function () {
+
+        });
+    });
+
+    function deleteItemData(){
+
+
+        <?php
+        if($obj1->delete_date){
+        ?>
+        var urlPost = '/a_p_i/member-data/un-delete/?' + "&id=" + '<?php echo $obj1->id ?>';
+        <?php
+        }
+        else{
+        ?>
+        var r = confirm("Bạn sẽ xóa mục này? (Đánh dấu xóa, có thể khôi phục)");
+        if (r == false) {
+            return;
+        }
+        var urlPost = '/a_p_i/member-data/delete/?' + "&id=" + '<?php echo $obj1->id ?>';
+        <?php
+        }
+        ?>
+
+        console.log(" urlPost Save = " + urlPost);
+
+        showWaittingIcon();
+
+        $.post(urlPost, {}, function(result){
+            hideWaittingIcon();
+
+            if(!ClassApi.checkReturnApi(result))
+                return;
+            if(result.payload == 0)
+                showToastWarningBottom("Nothing update?");
+            else {
+                alert("Delete/UnDelete Done?");
+                location.href = '';
+            }
+        });
+    }
+
+    function saveDataDel() {
+//        alert("Save dataa");
+
+        var data1 = {};
+        <?php
+            if(isset($arrEdit))
+        foreach ($arrEdit as $field) {
+        ?>
+        data1['<?php echo $field?>'] = $("#edit_" + '<?php echo $field?>').val();
+        <?php
+        }
+        ?>
+
+        //var summary0 = CKEDITOR.instances['summary0'].getData();
+        //var summary0 = $("#edit_summary0").val();
+        //var summary1 = CKEDITOR.instances['summary1'].getData();
+        //var summary2 = CKEDITOR.instances['summary2'].getData();
+        //var content = CKEDITOR.instances['content_textBoxEditable'].getData();
+
+
+        ////////
+        //val() is ok for \n, but html() or text() will ignore \n
+        var summary0 = $("#summary0").val();
+        //var summary0 = $("#edit_summary0").val();
+        var summary1 = $("#summary1").val();
+        var summary2 = $("#summary2").html();
+
+        //alert("Sum0 = " + summary0);
+
+//        var content = $("#content_textBoxEditable").html();
+
+        if (document.getElementById('content_textBoxEditable')) {
+            var content = tinymce.get('content_textBoxEditable').getContent();
+
+        } else {
+            var content = '';
+        }
+
+        var sourceText = $("#sourceText").html();
+        if(sourceText) {
+            content = sourceText;
+            console.log(" OK sourceText : " + content.substring(1,100));
+        }
+        else {
+            console.log(" NOT sourceText : " + content.substring(1,100));
+        }
+
+        data1['summary0'] = summary0;
+        data1['summary1'] = summary1;
+        data1['content'] = content;
+
+        if(ClassSettingApp.folderToSaveItem)
+            data1['parent'] = ClassSettingApp.folderToSaveItem;
+
+        console.log(" DAA1 = " + JSON.stringify(data1));
+
+        <?php
+        if(isset($params['create_new'])){
+        ?>
+        var urlPost = '/a_p_i/member-data/add/';
+        <?php
+        }
+        else{
+        ?>
+        var urlPost = '/a_p_i/member-data/save/?' + "&id=" + '<?php echo $obj1->id ?>';
+        <?php
+        }
+        ?>
+
+        console.log(" urlPost Save = " + urlPost);
+
+        showWaittingIcon();
+        $.post(urlPost, data1, function(result){
+            hideWaittingIcon();
+
+            if(!ClassApi.checkReturnApi(result))
+                return;
+            if(result.payload == 0)
+                showToastWarningBottom("Nothing update?");
+            else
+                showToastInfoBottom("Done?");
+
+            <?php
+            if(isset($params['create_new'])){
+            ?>
+            window.location.href = "<?php echo "/$module/$controller/view/id/" ?>" + result.payload;
+            <?php
+            }
+            ?>
+        });
+    }
+
+    function checkStatus_(e) {
+        //alert("Check status..." + e.target.id);
+        if($("#" + e.target.id).val() == 1)
+            $("#" + e.target.id).val(0);
+        else
+            $("#" + e.target.id).val(1);
+    }
+
+    $("[id^='add_item_to_folder']").click(function () {
+        var iditem = this.id.replace('add_item_to_folder', '');
+        ClassTree.addToMultiFolder2(iditem);
+        //$("[id^='td_row_music']").css("color", "white");
+        //$("#td_row_music" + pos).css("color", "orange");
+    });
+
+</script>
+
+    <script>
+        function enableLink(id) {
+
+            showWaittingIcon();
+            var urlPost = '/a_p_i/member-data-link/change-status/id/' + id + '/field/status';
+            $.post(urlPost, {}, function(result) {
+                hideWaittingIcon();
+                if (!ClassApi.checkReturnApi(result))
+                    return;
+                showToastInfoBottom("Done?");
+            });
+        }
+
+        function saveOrAddDataLink(saveId){
+            var data1 = {};
+            var urlPost = '/a_p_i/member-data-link/add/';
+            if(saveId) {
+                var urlPost = '/a_p_i/member-data-link/save/';
+                var name_of_id_ = $("#name_of_id_" +  saveId).val();
+                var link_of_id_ = $("#link_of_id_" +  saveId).val();
+                var summary_of_id_ = $("#summary_of_id_" +  saveId).val();
+                data1['id'] = saveId;
+                data1['name'] = name_of_id_;
+                data1['summary'] = summary_of_id_;
+                data1['link'] = link_of_id_;
+                data1['refer_remote'] = $("#refer_remote_save_" + saveId).val();
+                data1['item_id'] = '<?php if(isset($item_id)) echo $item_id ?>';
+            }
+            else{
+                var link_name_new = $("#link_name_new").val();
+                var link_refer = $("#link_refer").val();
+                var link_idcloud_new = $("#link_idcloud_new").val();
+                var link_summary_new = $("#link_summary_new").val();
+                data1['name'] = link_name_new;
+                data1['refer_remote'] = link_refer;
+
+                data1['summary'] = link_summary_new;
+                data1['item_id'] = '<?php if(isset($item_id)) echo $item_id ?>';
+            }
+
+            console.log(" urlPost Add/Save datalink = " + urlPost);
+
+            showWaittingIcon();
+            $.post(urlPost, data1, function(result) {
+                hideWaittingIcon();
+                if (!ClassApi.checkReturnApi(result))
+                    return;
+                if (result.payload == 0)
+                    showToastWarningBottom("No change?");
+                else
+                    showToastInfoBottom("Done?");
+
+                if(!saveId){
+                    //alert("Echo xxx");
+                    //$("#tbl_list_link tr:first").after('<tr><td style="color: red"><b>new link</b></td><td></td><td>' + link_name_new + '</td><td>' + link_summary_new + '</td><td>' + link_idcloud_new + '</td><td></td></tr>');
+                    //$("#tbl_list_link").closest('table').find('tr:last').prev().after('<tr><td style="color: red"><b>new link</b></td><td></td><td>' + link_name_new + '</td><td>' + link_summary_new + '</td><td>' + link_idcloud_new + '</td><td></td></tr>');
+                    $('<tr><td style="color: red"><b>new link</b></td><td></td><td>' + link_name_new + '</td><td>' + link_summary_new + '</td><td>' + link_idcloud_new + '</td><td></td></tr>').insertAfter("#tr_add_row_link");
+                }
+
+            });
+        }
+
+
+        setTimeout(function () {
+            uploadObj.update({formData: {uploadModule: 'image_module_upload' }});
+        }, 1000);
+
+    </script>
+
+<div class="clearfix"></div>
+
+</section>
+<?php
+

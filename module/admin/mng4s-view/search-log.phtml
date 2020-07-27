@@ -1,0 +1,223 @@
+<section class="content">
+    <?php
+    $params = \Base\ClassRoute::getArrParams();
+    
+
+    set_time_limit(30);
+
+    $timeStart = time();
+
+    echo "<h2> Tìm kiếm LOG </h2>";
+    echo "(Log nạp tiền người dùng, trong ít nhất 3 ngày, đến khoảng 1 tháng gần nhất)<br/>";
+
+    $str = $limit_time_log_from = $limit_time_log_to = "";
+    if (count($params) > 0) {
+
+        $str = @$params['search_card'];
+        $limit_time_log_from = @$params['limit_time_log_from'];
+        $limit_time_log_to = @$params['limit_time_log_to'];
+
+    }
+    ?>
+
+    <form method ='post' action="">
+    <span style="width: 250px; text-align: right">
+        Tìm thông tin thanh toán:
+    </span>
+        <input type='text' name ='search_card' style='color: blue' value ="<?php echo $str ?>" />
+        <input type='submit' value='Tìm kiếm'/><br/> (Chú ý: nếu tìm số đt, cần bỏ số 0 trước số phone, vì đôi khi số trong Log là <b>+849...</b> chứ ko phải số <b>09...</b> nên có thể sẽ không thấy trong log nếu tìm với <b>09...</b>
+        <br/>VD: khách hàng có số là <b>091234564</b> thì bỏ 0, chỉ tìm <b>91234564</b>)
+
+        <!--    <br/>
+
+    Giới hạn thời gian, Từ Năm-Tháng:
+    <input style='color: blue'  title='Dạng: 2013-05 ; bỏ trống để tìm tất cả (từ 2010)' type='text' name ='limit_time_log_from' value ="<?php echo $limit_time_log_from ?>" />
+    Đến Năm-Tháng:
+    <input style='color: blue'  title='Dạng: 2013-05 ; bỏ trống để tìm đến hiện tại' type='text' name ='limit_time_log_to'  value ="<?php echo $limit_time_log_to ?>" /> (Bỏ trống để tìm đến hiện tại)
+    <br/> (Ví dụ dạng tháng năm, năm trước tháng sau: 2013-05 . Nếu tìm quá 60 giây thì sẽ dừng lại và báo lỗi, do đó đặt giới hạn để tìm có kết quả!)-->
+    </form>
+
+    <!--
+    <form method ='post'>
+        <span style="width: 250px; text-align: right">
+            Tìm SMS
+        </span>
+        <input type='text' name ='search_sms' />
+
+        <input type='submit' value='Tìm kiếm'/>(Tìm Like - chú ý bỏ số 0 trước số phone)
+    </form>
+
+
+    <form method ='post'>
+        <span style="width: 250px; text-align: right">
+            Tìm Funny</span>
+        <input type='text' name ='search_funny' />
+
+
+
+        <input type='submit' value='Tìm kiếm'/>(Trước 6.5.2014 thì tìm Funny ở đây)
+    </form>
+    -->
+
+    <?php
+    if (count($params) > 0) {
+
+        $str = strtolower($params['search_card']);
+
+        if(strlen($str) < 5){
+            bl("Chuỗi tìm phải ít nhất 5 ký tự!");
+            return;
+        }
+
+        $limit_time_log_from_Unix = 0;
+        if(isset($params['limit_time_log_from']) && !empty($params['limit_time_log_from'])){
+            $limit_time_log_from = $params['limit_time_log_from'];
+            $limit_time_log_from_Unix = strtotime($limit_time_log_from);
+        }
+
+        if(isset($params['limit_time_log_to']) && !empty($params['limit_time_log_to'])){
+            $limit_time_log_to = $params['limit_time_log_to'];
+            $limit_time_log_to_Unix = strtotime($limit_time_log_to);
+        }
+        else
+            $limit_time_log_to_Unix = time()+3600;
+
+        tb("Lệnh đang tìm kiếm: $str, thời gian tìm: $limit_time_log_from đến $limit_time_log_to");
+
+        /*
+        if (isset($params['search_card'])) {
+            $str = $params['search_card'];
+            $filename = "/var/glx/weblog/billing/mobile2014";
+            echo "<br/> Chuỗi tìm kiếm nạp thẻ: $str";
+        }
+        if (isset($params['search_sms'])) {
+            $str = $params['search_sms'];
+            $filename = "/var/glx/weblog/billing/sms2014";
+            echo "<br/> Chuỗi tìm kiếm SMS: $str";
+        }
+        if (isset($params['search_funny'])) {
+            $str = $params['search_funny'];
+            $filename = "/var/glx/weblog/billing/sms2014";
+            echo "<br/> Chuỗi tìm kiếm Funny: $str";
+        }
+
+        if (strlen($str) < 5) {
+
+            echo "<br/>Lỗi: chuỗi tìm kiếm tối thiểu 5 ký tự! ($str)";
+            return;
+        }
+
+        $str = strtolower($str);
+
+        if (!file_exists($filename)) {
+            bl("Error: Empty file to search?");
+            return;
+        }
+
+        */
+
+        $arrBillLog = getArrBillFile();
+
+
+
+
+        $countFoundAll = 0;
+
+        $time0 = time();
+
+        $filesizeTotal = 0;
+        $countFile = 0;
+
+        $totalFile = count($arrBillLog);
+
+        $countFile = 0;
+        foreach ($arrBillLog AS $filename) {
+
+
+            $filetime = filemtime($filename);
+            //echo "<br/> FTIme = $filetime ";
+
+            if($filetime < time() - _NSECOND_DAY * 2){
+                continue;
+            }
+            echo "<hr>";
+            echo "<br><b> Tìm trong log file: $filename </b>, Thời gian của file: ". nowyh(filemtime($filename)). " / Kích thước file: ". ByteSize(filesize($filename));
+
+            $countFile++;
+            $lines = array();
+            $lines = file($filename);
+            $count = count($lines);
+
+            if(strstr($filename, ".stop")){
+                echo "<br> Bo qua file nay: $filename";
+                continue;
+            }
+
+            echo "\n === Mem: ".ByteSize(memory_get_usage());
+            echo "<b>---Dang tim trong log file: $filename</b>";
+
+            if(memory_get_usage() > 590*_MB){
+                echo "<br>--- mem over 590, stop!";
+                break;
+            }
+
+            $countFound = 0;
+            for ($i = 0; $i < $count; $i++) {
+                $line = strtolower($lines[$i]);
+                if (strstr($line, $str)) {
+
+                    echo "<br> <b> Tìm trong log file: $filename </b>, Thời gian của file: ". nowyh(filemtime($filename)). " / Kích thước file: ". ByteSize(filesize($filename));
+
+                    $countFound++;
+                    $countFoundAll++;
+                    echo "<br>---------------------------------<br/>";
+                    for ($j = $i - 15; $j < $i + 15; $j++) {
+                        if (isset($lines[$j])) {
+                            $pad1 = $pad2 = "";
+                            if ($i == $j) {
+                                $pad1 = " ===>>> <b> ";
+                                $pad2 = "</b>";
+                            }
+
+                            if (strstr($lines[$j], 'password:'))
+                                $lines[$j] = substr($lines[$j], 0, strpos($lines[$j], 'password:'));
+                            if (strstr($lines[$j], 'password moi la:'))
+                                $lines[$j] = substr($lines[$j], 0, strpos($lines[$j], 'password moi la:'));
+
+                            if(empty($pad1))
+                                echo "<br/> $pad1 " . $lines[$j] . " $pad2 ";
+                            else
+                                inred("$pad1 " . $lines[$j] . " $pad2 ");
+                        }
+                    }
+                    $i = $i + 14;
+
+                    if(empty($limit_time_log_from_Unix))
+                        if(time() - $time0 > 10){
+                            echo "<br>--- Stop vì thời gian tìm tối đa 10 giây!!";
+                            break;
+                        }
+
+//                if ($countFoundAll > 200) {
+//                    bl("Số tìm kiếm lớn hơn >200... dừng ở đây!");
+//                    break;
+//                }
+                }
+            }
+
+            if($countFound > 0)
+                bl("Tìm thấy $countFound Kết quả trong file $filename , Thời gian file: " . nowyh(filemtime($filename)));
+            else
+                echo ("<br/> - Tìm thấy $countFound Kết quả trong file $filename");
+
+            unset($lines);
+        }
+
+        echo "<br> Tổng kích thước log tìm kiếm: $countFile file, ". ByteSize($filesizeTotal);
+        echo "<br> Thời gian tìm kiếm: ".time() - $timeStart;
+
+    }
+    ?>
+
+
+</section>

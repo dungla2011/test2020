@@ -1,0 +1,66 @@
+
+<style>
+    label {
+        font-weight: normal;
+    }
+
+</style>
+
+
+<!-- Content Header (Page header) -->
+<section class="content-header">
+    <h1>
+        Dashboard
+        <small>Permission</small>
+    </h1>
+    <ol class="breadcrumb">
+        <li><a href="#"><i class="fa fa-dashboard"></i> Home</a></li>
+        <li class="active">Permission</li>
+    </ol>
+</section>
+
+<!-- Main content -->
+<section class="content">
+
+<div  ng-cloak id="pemission_group" ng-controller="cms_permission">
+    
+<p style="position:fixed;left: 50%;z-index: 10000" ng-hide="dataLoaded">
+    <i class="fa fa-spinner fa-spin fa-2x"></i>
+</p>
+
+    <div>
+        Chọn 1 Nhóm dưới đây:<br/><br/>
+        <span ng-repeat="group in groups" style="padding: 10px; background: snow; margin: 5px; padding: 5px">
+            <input ng-checked="sessionObj.cms_permission_selecting_group_get() === group.id ? true : false" type="radio" name="gender" id="{{group.id}}" value="{{group.id}}" ng-click="groupUserSelected(group.id)"> <label  title="{{group.id}}" for="{{group.id}}">{{group.groupname}} </label>
+        </span>
+
+    </div>
+
+    Hiển thị:
+    <input type="radio" ng-change="changeRightList(0)" ng-model="select_allow_right" name="xxx" value="0" id="select_allow_right0"> <label for="select_allow_right0">Tất cả các quyền</label>
+    <input type="radio" ng-change="changeRightList(1)" ng-model="select_allow_right"  name="xxx" value="1" id="select_allow_right1"> <label for="select_allow_right1">Chỉ các quyền đã cấp</label>
+    <input type="radio" ng-change="changeRightList(2)" ng-model="select_allow_right"  name="xxx" value="2" id="select_allow_right2"> <label for="select_allow_right2">Các quyền chưa cấp</label>
+    | {{select_allow_right}}
+    <br>
+
+
+    <div ng-repeat="(module_name, controller) in action_list">
+<!--        <input disabled type="checkbox" name="gender" id="module_{{module_name}}" value="module_{{module_name}}" ng-click="">-->
+        <label for="module_{{module_name}}"><b>Module: {{module_name}} </b></label>
+        <div border='1' style='margin: 5px; padding: 5px;'>
+            <div ng-repeat="(ctr_name, actions) in controller" style="">
+                <input type="checkbox" name="gender" id="{{module_name}}-{{ctr_name}}" value="ctr_{{ctr_name}}" ng-click="toggleForController(module_name, ctr_name, $event)"> <label for="{{module_name}}-{{ctr_name}}">Controller: <b>{{ctr_name}}</b> </label>
+                <div border='0' style='margin: 5px; padding: 5px;'>
+                    <span ng-repeat="(action, action_url) in actions" ng-show="select_allow_right == 0 || (action_url[1] && select_allow_right == 1) || (!action_url[1] && select_allow_right == 2)" >
+                        [{{gidSelectName}}] <input type="checkbox" ng-disabled="action_url[1] == 2"  title="{{action_url[1] == 2 ? 'Kế thừa quyền từ Guest' : 'Cho phép/Hủy quyền'}}" ng-checked="action_url[1]" name="gender" id="{{action_url[0]}}" value="act_{{action_url[0]}}" ng-click="toggleForAction($event)"> <label for="{{action_url[0]}}">{{action_url[0]}}</label>
+                        <br/>
+                    </span>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+</section>
+<!-- /.content -->

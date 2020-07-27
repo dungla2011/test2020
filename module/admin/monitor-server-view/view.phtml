@@ -1,0 +1,219 @@
+<style>
+    .content-wrapper{
+        background-color: white;
+    }
+</style>
+
+<link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+
+<?php
+
+$param = \Base\ClassRoute::getArrParams();
+$id = $param['id'];
+
+$obj = new \Base\ModelMonitorItem();
+if(!$obj->getOneWhereSql(" id = $id")){
+    bl("Not fount this item? ($id)");
+    return;
+}
+
+
+$itemId = $id;
+$dir = "/var/glx/weblog/monitor_server/log_item/$itemId";
+
+
+baoloi("Dang phat trien!");
+return;
+
+$arrFile = scandir($dir);
+
+
+//echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+//print_r($arrFile);
+//echo "</pre>";
+
+$from = nowy(time() - _NSECOND_DAY);
+$to = nowy();
+if(isset($param['from'])){
+    $from = $param['from'];
+}
+if(isset($param['to'])){
+    $to = $param['to'];
+}
+
+//echo "<br/>$from - $to";
+
+$arrAllLine = array();
+foreach ($arrFile as $item) {
+    if($item == '.' || $item == '..')
+        continue;
+    if($from && $to)
+        if($item >= $from && $item <= $to){
+            $arrLine = file("$dir/".$item);
+            $arrAllLine = array_merge($arrAllLine, $arrLine);
+        }
+}
+
+//echo "<br/>$item";
+
+$count = 0;
+
+$startRange = str_replace("#","",$arrAllLine[0]);
+$endRange = str_replace("#","",end($arrAllLine));
+$startRange = nowyh(trim(explode("-",$startRange)[0]));
+$endRange = nowyh(trim(explode("-",$endRange)[0]));
+
+
+?>
+
+
+<?php
+
+
+$url = \Base\ClassRoute::getFullAction()."/id/$id";
+
+
+
+$today      = nowy();
+$last7Day   = nowy(time() - _NSECOND_DAY * 7);
+$last30Day   = nowy(time() - _NSECOND_DAY * 30);
+$last30Day   = nowy(time() - _NSECOND_DAY * 30);
+
+$start_weekLast = ClassDateTime::getStartDayLastWeek();
+$end_weekLast = ClassDateTime::getEndDayLastWeek();
+
+$startDayLastMonth = ClassDateTime::getStartDayLastMonth();
+$endDayLastMonth = ClassDateTime::getEndDayLastMonth();
+
+//echo "<br> LAST WEEK: " . $start_weekLast.' '.$end_weekLast ;
+//echo "<br> LAST 7Day: $last7Day ";
+//echo "<br> Today: $today";
+//echo "<br> last30Day: $last30Day";
+//echo "<br> lastMonth: $startDayLastMonth -> $endDayLastMonth";
+
+
+?>
+
+
+<!-- Content Header (Page header) -->
+<section class="content-header">
+    <h1>
+        Monitor Item
+        <small></small>
+    </h1>
+    <ol class="breadcrumb">
+        <li><a href="/admin/monitor-server/"><i class="fa fa-dashboard"></i> Monitor list</a></li>
+        <li class="active">Monitor item</li>
+    </ol>
+</section>
+
+<!-- Main content -->
+<section class="content" ng-controller="monitor_server_view">
+    <?php
+        //echo "<br/> Khoảng dữ liệu tìm thấy: $startRange - $endRange <br>";
+    echo "<b>Item info: $obj->name , Url check: $obj->url_check </b>";
+    echo "<br/>";
+    ?>
+    <div style="text-align: ">
+
+        <a href="/<?php echo $url."/from/$startDayLastMonth/to/$endDayLastMonth" ?>"> Last Month</a> |
+        <a href="/<?php echo $url."/from/$start_weekLast/to/$end_weekLast" ?>"> Last Week </a>|
+        <a href="/<?php echo $url."/from/$last30Day/to/$today" ?>"> Last 30 Day</a> |
+        <a href="/<?php echo $url."/from/$last7Day/to/$today" ?>"> Last 7 Day </a>
+
+        <input placeholder="From date" type="text" id="datepicker" style="width: 100px; padding: 0px 5px">
+        <input placeholder="To date" type="text" id="datepicker2" style="width: 100px; padding: 0px 5px">
+        <button  style=" padding: 0px 5px"> GET </button>
+
+    </div>
+    <div id="curve_chart" style="width: 100%; height: 200px"> Loading ...</div>
+</section>
+<!-- /.content -->
+<!-- Main content -->
+
+<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+<script type="text/javascript">
+
+    $( function() {
+        $( "#datepicker" ).datepicker({
+            dateFormat: 'yy-mm-dd',
+            onSelect: function() {
+                var dateObject = $(this).datepicker('getDate');
+                var dateStr = dateObject.getFullYear() + '-' + ("0"+(dateObject.getMonth()+1)).slice(-2) + '-' +("0" + dateObject.getDate()).slice(-2)
+                    ;
+                console.log(" dateObject1= " + dateStr);
+            }
+        });
+    } );
+    $( function() {
+        $( "#datepicker2" ).datepicker({
+            dateFormat: 'yy-mm-dd',
+            onSelect: function() {
+                var dateObject = $(this).datepicker('getDate');
+                var dateStr = dateObject.getFullYear() + '-' + ("0"+(dateObject.getMonth()+1)).slice(-2) + '-' +("0" + dateObject.getDate()).slice(-2)
+                ;
+                console.log(" dateObject2= " + dateStr);
+            }
+        });
+    } );
+
+    //google.charts.load('current', {'packages':['corechart']});
+    google.charts.load('current', {'packages':['line']});
+    google.charts.setOnLoadCallback(drawChart);
+
+    //hideWaittingIcon();
+
+    function drawChart() {
+        var data = google.visualization.arrayToDataTable([
+            ['Time', ''],
+            <?php
+
+            foreach ($arrAllLine AS $line){
+                $line = trim($line);
+                $line = str_replace("#","",$line);
+                $count++;
+
+                $tmp = explode("-",$line);
+                $time = $tmp[0];
+                $alive = $tmp[1];
+
+                $time = nowyh($time);
+
+                echo " ['$time',  $alive], ";
+            }
+
+            for($i = 0; $i < 1000; $i+=10){
+                $time = nowyh(time() - 100 * $i);
+//                        if(in_array($i/10, array(10,11,12, 30,50, 90,91,92,95)))
+//                            echo " ['$time',  0], ";
+//                        else
+//                            echo " ['$time',  1], ";
+            }
+            ?>
+        ]);
+
+        var options = {
+            title: 'Online/Offline',
+            curveType: 'function',
+            legend: { position: 'bottom' }
+        };
+
+
+
+        //var chart = new google.visualization.LineChart(document.getElementById('curve_chart'));
+        var chart = new google.charts.Line(document.getElementById('curve_chart'));
+
+        <?php
+        if(count($arrAllLine) > 0){
+        ?>
+
+        chart.draw(data, google.charts.Line.convertOptions(options));
+
+
+
+        //chart.draw(data, options);
+        <?php
+        }
+        ?>
+    }
+</script>

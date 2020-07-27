@@ -1,0 +1,89 @@
+<?php
+$params = \Base\ClassRoute::getArrParams();
+
+if(isset($params['id'])){
+    $id = qqgetIdFromRand($params['id']);
+    if(!is_numeric($id)){
+        loi("Not valid id?");
+    }
+
+    //bl("ID = $id");
+}
+?>
+
+<?php
+require_once "application/block/upload_image_clipboard.php";
+?>
+
+<script>
+    ClassApi.getOnlyId = '<?php echo $params['id'] ?>';
+</script>
+
+<div style="padding-top: 20px">
+
+<div class="content" ng-controller="data_index_view" style="margin: 0 0 0 20px; background-color: white;">
+
+    <div style="float: left; width: 400px">
+
+        <!-- New : View/Edit Modal -->
+        <div  ng-repeat="meta in meta_data" >
+            <label ng-model="meta.name"> {{meta.name}} </label>
+            <!--                        <input ng-show="meta.editable" type="text" class="form-control" ng-model="editingItem[meta.field]">-->
+            <!--                        <input ng-show="!meta.editable" type="text" readonly class="form-control" ng-model="editingItem[meta.field]">-->
+
+            <input ng-show="!meta.is_status && meta.editable" type="text" class="form-control" ng-model="editingItem[meta.field]">
+            <input ng-show="!meta.is_status && !meta.editable" type="text" readonly class="form-control" ng-model="editingItem[meta.field]">
+            <input ng-show="meta.is_status" type="checkbox" ng-click="changeStatusValue($event, meta.field)"
+                   ng-checked="editingItem[meta.field] == 1" ng-disabled="!meta.editable">
+
+            <span id="status_edit" style="color: brown;"> </span>
+        </div>
+        <button type="button" class="btn btn-primary" ng-click="saveItem()" ng-show="!isEmpty(arrEditable)">Save</button>
+    </div>
+
+    <div style="float: left; width: 400px; border-left: 1px solid #ccc ; padding: 10px; min-height: 500px; margin-left: 10px">
+        .............
+
+        <input ng-model="arr_data[0].name">
+
+
+    </div>
+
+
+
+
+</div>
+</div>
+
+<div class="clearfix"></div>
+<?php
+
+
+echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+print_r($params);
+echo "</pre>";
+
+if(isset($params['id'])){
+    $id = qqgetIdFromRand($params['id']);
+    if(!is_numeric($id)){
+        loi("Not valid id?");
+    }
+}
+
+$obj = new \Base\ModelDataFile();
+if(!$obj->getOne($id)){
+    loi("Not found this item?");
+}
+
+echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+print_r($obj);
+echo "</pre>";
+
+
+
+
+
+?>
+
+
+

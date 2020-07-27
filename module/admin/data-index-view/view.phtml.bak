@@ -1,0 +1,601 @@
+
+<script src="/public/libaries/tinymce/tinymce.min.js"></script>
+<div style="padding: 10px">
+
+<?php
+\Base\ClassUploadSetting::$moduleUploadNow = 'image#';
+\Base\ClassUploadSetting::$getStaticLinkAfterUpload = 1;
+require_once (\Base\ClassRoute::$rootDirApp."/application/block/upload_block.php");
+
+require_once "application/block/js_editor_lad.php";
+
+$module = \Base\ClassRoute::getCurrentModule();
+$controller = \Base\ClassRoute::getCurrentController();
+$action = \Base\ClassRoute::getCurrentAction();
+$strToSaveSession = str_replace("-","_", $module.$controller.$action);
+
+$params = \Base\ClassRoute::getArrParams();
+
+if(isset($params['id'])){
+    $idRand = $params['id'];
+    $id = qqgetIdFromRand($params['id']);
+    if(!is_numeric($id)){
+        loi("Not valid id?");
+    }
+
+    //bl("ID = $id");
+
+    $obj = new \Base\ModelDataFile();
+    if(!$obj->getOne($id)){
+        bl("Không tồn tại id này? $idRand");
+        return;
+    }
+
+
+}
+if(isset($params['create_new'])){
+    $obj = new \Base\ModelDataFile();
+    $obj->initEmptyObject();
+}
+
+?>
+
+<script>
+    //    var urlBaseApiTree = "/a_p_i/member-image";// ?time=1516245801505&pid=folder_0
+    //    var modulePublicTree = "image";
+    //    var viewAsDefaultGridOrTable = 'grid'; //'table'
+
+    function doneUploadFile(data) {
+        //alert("Upload done!");
+
+        console.log(" doneUploadFile data = " + JSON.stringify(data.payload));
+
+        if(!ClassApi.checkReturnApi(data)){
+            alert("Not valid return API after upload done? " + data);
+            return;
+        }
+        console.log(" LINK IMG = " + data.payload[0].link_image_static);
+        $("#img_zone").html($("#img_zone").html() + "<image style='width: 200px; margin: 3px; border: 1px solid darkslategray' src='" + data.payload[0].link_image_static + "'>");
+
+    }
+
+    function CopyFromDataId() {
+
+        var dataId = $("#data_id_to_copy").val();
+        console.log(" urlPost Save = " + urlPost);
+        var data1 = {};
+        var urlPost = '/a_p_i/member-data/copy-item/';
+        data1['data_id_to_copy'] = dataId;
+        showWaittingIcon();
+        $.post(urlPost, data1, function(result){
+            hideWaittingIcon();
+
+            if(!ClassApi.checkReturnApi(result))
+                return;
+            if(result.payload == 0)
+                showToastWarningBottom("Nothing update?");
+            else {
+                showToastInfoBottom("Done?");
+                window.location.href = "<?php echo "/$module/$controller/view/id/" ?>" + result.payload;
+            }
+
+        });
+
+    }
+
+
+    setTimeout(function () {
+        uploadObj.update({formData: {uploadModule: 'image_module_upload' }});
+    }, 1000);
+</script>
+
+
+<div id="img_zone" style="border: 1px solid #ccc; padding: 2px">
+    Image uploaded:
+</div>
+
+<?php
+if(isset($params['create_new'])) {
+    ?>
+    <div>
+        Copy From DataID <input type="text" id="data_id_to_copy" placeholder="Enter Data ID">
+        <button onclick="CopyFromDataId()"> Copy</button>
+    </div>
+    <?php
+}
+?>
+
+<br>
+<a title="select folder to browse" style="padding: 3px 3px; background-color: darkgray; color: white;
+ border 1px solid green" href="#" onclick="$('#myModalTreeSelectFolder').modal('show')"
+   aria-hidden="false" class="">
+    Select Folder <span id="selectingFolderPathToSave"><?php if($obj->id) echo $obj->getParentPathNames() ?></span>
+    <i class="fa fa-caret-right" aria-hidden="true"></i>
+</a>
+
+<div ng-app="ladApp" ng-controller="TreeController" id="tree_in_index_browse">
+
+    <script type="text/ng-template" id="tplTreeModalSelectFolder">
+        <span style="" ng-click="toggleNodeLeft(menu.id, 0, 1)">
+            <i style="margin: 0 5px" ng-show="menu.menus" class="fa fa-angle-down" aria-hidden="true"></i>
+            <i style="margin: 0 5px" ng-show="!menu.menus" class="fa fa-caret-right" aria-hidden="true"></i>
+        </span>
+        <button style="border: 0px solid gray; background-color: transparent; overflow: hidden" id="folderToMove-{{menu.id}}"
+                onclick="ClassTree.choiceFolderToMove(event)"
+                onmouseup="ClassTree.hoverFolderToMove(event)"
+                ng-dblclick="menu.type==0 ? toggleNodeLeft(menu.id, 0, 1) : ''"
+                title="{{menu.name}}">
+            <i style="color: #6B8E23;" id="folderToMove2-{{menu.id}}" class="fa fa-folder" aria-hidden="true"
+               onclick="ClassTree.choiceFolderToMove(event)"
+               onmouseup="ClassTree.hoverFolderToMove(event)"
+               ng-dblclick="menu.type==0 ? toggleNodeLeft(menu.id, 0, 1) : ''"
+               title="{{menu.name}}"></i>
+            {{menu.name|limitTo:20}}{{menu.name.length > 20? "..." : ""}}
+        </button>
+        <span ng-click="selectFolderTree(menu.id)" style="background-color: gray; color: white; padding: 3px; margin: 1px"> select </span>
+
+        <ul  ng-if="menu.menus">
+            <li ng-repeat="menu in menu.menus" ng-show="menu.type == 0" ng-include="'tplTreeModalSelectFolder'">
+            </li>
+        </ul>
+    </script>
+
+
+    <!-- Modal Popup Add to folder-->
+    <div class="modal" id="myModalTreeSelectFolder" tabindex="-1" role="dialog" aria-labelledby="myModalTreeLabel">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                                aria-hidden="true">&times;</span>
+                    </button>
+                    <h4 class="modal-title" id="myModalTreeLabel">Chọn folder save Item</h4>
+                </div>
+                <div class="modal-body">
+
+                    <ul>
+<!--                        <a href="/{{_module}}/{{_controller}}/{{_action}}"> DUYỆT TẤT CẢ </a>-->
+
+                        <li ng-repeat="menu in menus" ng-show="menu.type == 0" ng-include="'tplTreeModalSelectFolder'">
+                        </li>
+                    </ul>
+                </div>
+                <div class="modal-footer">
+
+                    <!--                    <input type="text" class="form-control" style="float: left; width: 150px; margin: 0px 5px;">-->
+                    <!---->
+                    <!--                    <button type="button" class="btn btn-success" style="float: left;">Tạo Folder</button>-->
+
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Hủy</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="clearfix"></div>
+
+</div>
+
+
+<script type="text/javascript">
+    tinymce.init({
+        selector: '#content_textBoxEditable',
+        plugins: [
+            "anchor autolink codesample colorpicker contextmenu fullscreen help image imagetools",
+            " paste code lists link media noneditable preview",
+            " searchreplace table template textcolor visualblocks wordcount"
+        ], //removed:  charmap insertdatetime print
+        image_title: true,
+        automatic_uploads: true,
+        file_picker_types: 'image',
+        paste_data_images: true,
+        image_class_list: [
+            {title: 'Responsive', value: 'img-responsive'}
+        ],
+        //toolbar: "sizeselect | bold italic | fontselect |  fontsizeselect | align | forecolor backcolor link image",
+        toolbar:
+            "insertfile a11ycheck undo redo paste | fontselect sizeselect fontsizeselect bold italic | forecolor backcolor | template codesample | alignleft aligncenter alignright alignjustify | bullist numlist | link image media | ",
+        textcolor_cols: "5",
+        image_class_list: [
+            {title: 'Responsive', value: 'img-responsive'}
+        ],
+        file_picker_callback: function(cb, value, meta) {
+            var input = document.createElement('input');
+            input.setAttribute('type', 'file');
+            input.setAttribute('accept', 'image/*');
+            input.onchange = function () {
+                var file = this.files[0];
+                var reader = new FileReader();
+
+                reader.onload = function () {
+                    var id = 'blobid' + (new Date()).getTime();
+                    var blobCache = tinymce.activeEditor.editorUpload.blobCache;
+                    var base64 = reader.result.split(',')[1];
+                    var blobInfo = blobCache.create(id, file, base64);
+                    blobCache.add(blobInfo);
+                    cb(blobInfo.blobUri(), {title: file.name});
+                };
+                reader.readAsDataURL(file);
+            };
+            input.click();
+        }
+    });
+</script>
+
+<script>
+
+    var urlBaseApiTree = '/a_p_i/member-data/list-tree-folder';
+
+    setTimeout(function () {
+
+        var scope = angular.element($("#tree_in_index_browse")).scope();
+        if(!scope || typeof scope == 'undefined'){
+            alert("Error: can not get scope?");
+        }
+        scope.selectFolderTree = function (id) {
+            //alert("ID = " + id );
+            // Simple GET request example:
+
+            showWaittingIcon();
+
+            var urlGet = "/a_p_i/member-data/get-item/id/" + id + "/filetype/0";
+            $.get(urlGet, function(data, status){
+                //alert("Data: " + data + "\nStatus: " + status);
+                hideWaittingIcon();
+
+                if(!ClassApi.checkReturnApi(data, urlGet))
+                    return;
+
+                ClassSettingApp.folderToSaveItem = id;
+
+                console.log(" data = " + JSON.stringify(data));
+                console.log(" data.payload._parent_path = " + data.payload._parent_path);
+
+                $("#selectingFolderPathToSave").html(data.payload._parent_path);
+
+                $('#myModalTreeSelectFolder').modal('hide');
+
+                sessionStorage.<?php echo $strToSaveSession ."_selecting_folder_id" ?> = id;
+                sessionStorage.<?php echo $strToSaveSession ."_selecting_folder_name" ?> = data.payload._parent_path;
+
+            });
+        }
+
+
+        <?php
+        //Neu la create new thì chọn sẵn folder đã chọn trước đó:
+        if(isset($params['create_new'])){
+        ?>
+            if(sessionStorage.<?php echo $strToSaveSession ."_selecting_folder_name" ?>){
+                $("#selectingFolderPathToSave").html(sessionStorage.<?php echo $strToSaveSession ."_selecting_folder_name" ?>);
+                ClassSettingApp.folderToSaveItem = sessionStorage.<?php echo $strToSaveSession ."_selecting_folder_id" ?>;
+            }
+        <?php
+        }
+        ?>
+
+    }, 1000);
+    ////
+</script>
+
+
+<?php
+
+    $arrEdit = $obj->getArrayEditable();
+
+//    echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+//    print_r($arrEdit);
+//    echo "</pre>";
+
+if(isAdmin_()){
+
+
+//    $arr1 = $obj->getMetaDataApi();
+//    echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+//    print_r($arr1);
+//    echo "</pre>";
+
+
+
+
+
+}
+
+    echo "<br/><div style='float: left; max-width: 600px; padding : 10px'>";
+
+    echo "<table class='glx03'>";
+    foreach ($arrEdit as $field) {
+        if(!in_array("$field", ['summary0','summary1','content','parent'])) {
+            $val = $obj->$field;
+            echo "<tr>";
+            $fieldU = strtoupper($field);
+
+            if(isset($params['create_new'])){
+                if($field == 'price' || $field == 'status' || $field == 'price_original')
+                    $val = 0;
+                if($field == 'name'){
+                    $val = 'new';
+                }
+            }
+
+            if($obj->isStatusField($field)) {
+                $padCheck = '';
+                if($obj->$field)
+                    $padCheck = 'checked';
+                echo "<td>$fieldU: </td> <td style=''><input onclick='checkStatus_(event)' $padCheck type='checkbox'  id='edit_$field' value='$val'></td>";
+            }
+            else
+                echo "<td>$fieldU: </td> <td><input style='width: 400px' class='form-control' id='edit_$field' value='$val' title='$val'></td>";
+
+            echo "</tr>";
+        }
+        else{
+
+        }
+    }
+
+    echo "</table>";
+
+    echo "</div>";
+
+
+?>
+    <div class='div_img_data'>
+        Img0 - Ảnh đại diện
+        <br>
+        <a target="_blank" href="<?php echo $obj->image0 ?>">
+        <img class="img_data" src="<?php echo $obj->image0 ?>">
+        </a>
+    </div>
+
+    <div class='div_img_data'>
+    Img1<br>
+        <a target="_blank" href="<?php echo $obj->image1 ?>">
+        <img class="img_data"   src="<?php echo $obj->image1 ?>">
+        </a>
+    </div>
+
+    <div class='div_img_data'>
+    Img2<br>
+        <a target="_blank" href="<?php echo $obj->image2 ?>">
+        <img class="img_data"   src="<?php echo $obj->image2 ?>">
+        </a>
+    </div>
+
+    <div class='div_img_data'>
+    Img3<br>
+        <a target="_blank" href="<?php echo $obj->image3 ?>">
+        <img class="img_data"   src="<?php echo $obj->image3 ?>">
+        </a>
+    </div>
+
+    <div class='div_img_data'>
+    Img4<br>
+        <a target="_blank" href="<?php echo $obj->image4 ?>">
+        <img class="img_data"   src="<?php echo $obj->image4 ?>">
+        </a>
+    </div>
+
+    <div class='div_img_data'>
+    Img5<br>
+        <a target="_blank" href="<?php echo $obj->image5 ?>">
+        <img class="img_data"   src="<?php echo $obj->image5 ?>">
+        </a>
+    </div>
+
+    <div class='div_img_data'>
+    Img6<br>
+        <a target="_blank" href="<?php echo $obj->image6 ?>">
+        <img class="img_data"   src="<?php echo $obj->image6 ?>">
+        </a>
+    </div>
+
+
+
+<div class="clearfix"></div>
+<b>Chú ý</b>: <u><b>IMG0</b></u> là ảnh đại diện,  cần vuông, cỡ khoảng 400x400 để hiển thị đẹp<br>
+Có thể dùng Công cụ edit ảnh <a target="_blank" href="https://drive.google.com/open?id=0ByCxAWYxCj8LV3NIejdSN2tfN2s">SnagitEditor </a>
+<br>
+
+<br>
+
+<span style="font-size: 16px; font-weight: bold; "> Tóm tắt: </span>
+<!--<textarea style="height: 100px" cols="70" rows="6" id="summary0" name="summary0">--><?php //echo $obj->summary0; ?><!--</textarea>-->
+
+<div style="max-width: 1000px; margin: 0px; border: 2px solid gray">
+<div id="summary0" contenteditable="true" class="textBoxEditable" style="height: 200px"><?php echo $obj->summary0; ?></div>
+</div>
+<br>
+
+<!--<span style="font-size: 16px; font-weight: bold"> - Summary1: </span>-->
+<!--<textarea cols="80" id="summary1" name="summary1">--><?php //echo $obj->summary1; ?><!--</textarea>-->
+
+<div id="summary1" contenteditable="true" class="textBoxEditable" style="display: none; height: 200px"><?php echo $obj->summary1; ?></div>
+
+
+<!--<span style="font-size: 16px; font-weight: bold"> - Summary2: </span>-->
+
+<!--<textarea cols="80" id="summary2" name="summary2">--><?php //echo $obj->summary2; ?><!--</textarea>-->
+
+<span style="font-size: 16px; font-weight: bold; color: "> Nội dung: </span>
+
+
+<!----- CONTENT ----->
+<!--<textarea cols="80" id="content" name="content"></textarea>-->
+<form name="compForm" onsubmit="return false;">
+    <input type="hidden" name="myDoc">
+
+    <?php // require 'header_edit_box.php' ?>
+
+    <!--
+    <button onclick="ClassEditNews.insertNewImage()"><i class="fa fa-picture-o"></i>Insert Image</button>
+
+    <button onclick="ClassEditNews.insertNewLink('#')">Insert Link</button>
+
+    <button onclick="ClassEditNews.insertDiv2Vung()">Insert Div 50-50 </button>
+    <button onclick="ClassEditNews.insertDiv2Vung(8,4)">DIV 66-33 </button>
+    <button onclick="ClassEditNews.insertDiv2Vung(4,8)">DIV 33-66 </button>
+
+    <button onclick="ClassEditNews.insertTab2Vung(50,50)">Insert Table 50-50 </button>
+    <button onclick="ClassEditNews.insertDiv2Vung(66,33)">Table 66-33 </button>
+    <button onclick="ClassEditNews.insertDiv2Vung(33,66)">Table 33-66 </button>
+
+    <p id="editMode"><input type="checkbox" name="switchMode" id="switchBox" onchange="setDocMode(this.checked);" /> <label for="switchBox">Show HTML</label></p>
+-->
+
+
+
+<!--    <div id="content_textBoxEditable" class="textBoxEditable" contenteditable="true" style="">--><?php ////echo $obj->content; ?><!--</div>-->
+
+    <div style="max-width: 1000px; margin: 0px; border: 2px solid gray">
+        <div id="content_textBoxEditable" style="min-height: 300px; max-height: 1000px"><?php echo $obj->content; ?></div>
+    </div>
+
+    <textarea id="textAreaContent" style="display: none; width: 100%; min-height: 400px; border: 3px solid green; background-color: lavender"><?php echo $obj->content; ?></textarea>
+</form>
+
+<?php
+require_once "application/block/upload_image_clipboard.php";
+require_once "application/block/waitting_icon.php";
+
+?>
+
+
+
+<script>
+
+
+    function saveData() {
+//        alert("Save dataa");
+
+        var data1 = {};
+        <?php
+            foreach ($arrEdit as $field) {
+        ?>
+                data1['<?php echo $field?>'] = $("#edit_" + '<?php echo $field?>').val();
+        <?php
+            }
+        ?>
+
+        //var summary0 = CKEDITOR.instances['summary0'].getData();
+        //var summary0 = $("#edit_summary0").val();
+        //var summary1 = CKEDITOR.instances['summary1'].getData();
+        //var summary2 = CKEDITOR.instances['summary2'].getData();
+        //var content = CKEDITOR.instances['content_textBoxEditable'].getData();
+
+
+        var summary0 = $("#summary0").html();
+        //var summary0 = $("#edit_summary0").val();
+        var summary1 = $("#summary1").html();
+        var summary2 = $("#summary2").html();
+
+//        var content = $("#content_textBoxEditable").html();
+
+        var content = tinymce.get('content_textBoxEditable').getContent();
+
+        var sourceText = $("#sourceText").html();
+        if(sourceText) {
+            content = sourceText;
+            console.log(" OK sourceText : " + content.substring(1,100));
+        }
+        else {
+            console.log(" NOT sourceText : " + content.substring(1,100));
+        }
+
+
+        data1['summary0'] = summary0;
+        data1['summary1'] = summary1;
+        data1['content'] = content;
+
+        if(ClassSettingApp.folderToSaveItem)
+            data1['parent'] = ClassSettingApp.folderToSaveItem;
+
+        console.log(" DAA1 = " + JSON.stringify(data1));
+
+        <?php
+            if(isset($params['create_new'])){
+        ?>
+            var urlPost = '/a_p_i/member-data/add/';
+        <?php
+        }
+        else{
+        ?>
+            var urlPost = '/a_p_i/member-data/save/?' + "&id=" + '<?php echo $obj->id ?>';
+        <?php
+        }
+        ?>
+
+        console.log(" urlPost Save = " + urlPost);
+
+        showWaittingIcon();
+        $.post(urlPost, data1, function(result){
+            hideWaittingIcon();
+
+            if(!ClassApi.checkReturnApi(result))
+                return;
+            if(result.payload == 0)
+                showToastWarningBottom("Nothing update?");
+            else
+                showToastInfoBottom("Done?");
+
+            <?php
+            if(isset($params['create_new'])){
+            ?>
+                window.location.href = "<?php echo "/$module/$controller/view/id/" ?>" + result.payload;
+            <?php
+            }
+            ?>
+    });
+}
+
+function checkStatus_(e) {
+    //alert("Check status..." + e.target.id);
+    if($("#" + e.target.id).val() == 1)
+        $("#" + e.target.id).val(0);
+    else
+        $("#" + e.target.id).val(1);
+}
+
+
+
+</script>
+
+
+<div class="clearfix"></div>
+<?php
+
+$_publicLink = "/".$obj->getLinkFriendlyUrlEx();
+if(isset($params['create_new']))
+    $_publicLink = "#";
+
+require_once "application/block/view/admin_view.php";
+
+
+
+
+echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+print_r($params);
+echo "</pre>";
+
+
+
+if(isset($params['id'])){
+$id = qqgetIdFromRand($params['id']);
+if(!is_numeric($id)){
+    loi("Not valid id?");
+}
+}
+
+$obj->content = substr(strip_tags($obj->content), 0 , 50)."...";
+$obj->summary1 = substr(strip_tags($obj->summary1), 0 , 50)."...";
+$obj->summary0 = substr(strip_tags($obj->summary0), 0 , 50)."...";
+$obj->summary2 = substr(strip_tags($obj->summary2), 0 , 50)."...";
+
+if(isAdmin_()) {
+    echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+    print_r($obj);
+    echo "</pre>";
+}
+?>
+
+</div>

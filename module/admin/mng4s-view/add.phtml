@@ -1,0 +1,51 @@
+<?php
+$u = getCurrentUsername();
+$obj = new ClassUploader();
+
+//$obj = new \Base\ModelCloudFile();
+$urlBase = "/a_p_i/admin-payment";
+$module = \Base\ClassRoute::getCurrentModule();
+$controller = \Base\ClassRoute::getCurrentController();
+$act = \Base\ClassRoute::getCurrentAction();
+?>
+
+<!-- Content Header (Page header) -->
+<section class="content-header">
+    <button style="float: right" class="btn btn-info">
+        <a href='/admin/mng4s/uploader'> Return </a>
+    </button>
+    <h1>
+
+        <a href="<?php
+        echo "/$module/$controller/$act";
+        ?>">
+            Add Uploader
+        </a>
+
+    </h1>
+</section>
+
+<!-- Main content -->
+
+
+<section class="content">
+
+
+    <form method='post' action="">
+        Nhập vào email <input type='text' name='add_uploader'>
+        <input type='submit' value="AddUploader">
+        <br/>Thông tin tóm tắt uploader<br/>
+        <textarea cols="80" rows="5" name='user_uploader_info' > </textarea>
+    </form>
+    <hr>
+
+    <h3>
+Remove Uploader
+    </h3>
+
+    <form method='post' action="">
+        Nhập vào email Remove <input type='text' name='remove_uploader'>
+        <input type='submit' value="RemoveUploader">
+    </form>
+
+</section>

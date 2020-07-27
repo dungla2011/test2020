@@ -1,0 +1,557 @@
+<?php
+$u = getCurrentUsername();
+$obj = new ClassUploader();
+
+//$obj = new \Base\ModelCloudFile();
+$urlBase = "/a_p_i/admin-uploader";
+$module = \Base\ClassRoute::getCurrentModule();
+$controller = \Base\ClassRoute::getCurrentController();
+$act = \Base\ClassRoute::getCurrentAction();
+?>
+
+<!-- Content Header (Page header) -->
+<section class="content-header">
+    <h1>
+
+        <a href="<?php
+        echo "/$module/$controller/$act";
+        ?>">
+            UploaderList
+        </a>
+        <small>list</small>
+    </h1>
+</section>
+
+<!-- Main content -->
+
+
+<section class="content">
+    <?php
+
+    $class = get_class($obj);
+    //$obj = new \Base\ModelBillHosting();
+    ?>
+
+    <script>
+        var urlBase = '<?php echo $urlBase ?>';
+    </script>
+
+    <?php
+
+    $option = [];
+    $option['type'] = 'admin';
+
+    $params = \Base\ClassRoute::getArrParams();
+
+
+    $module = \Base\ClassRoute::getCurrentModule();
+    $controller = \Base\ClassRoute::getCurrentController();
+    $act = \Base\ClassRoute::getCurrentAction();
+
+    $uid = getCurrentUserId();
+
+
+    if($module == 'member'){
+        $params['userid'] = $uid;
+        //die("Member ... $uid");
+    }
+
+
+    //echo "<br/> act = $act";
+
+    $urlC = "/$module/$controller/$act";
+    $urlC = \Base\ClassRoute::getFullUriCurrent();
+
+
+
+
+    ?>
+
+    <?php
+
+    //if(strstr($urlC, "?page="))
+    //    $urlC = str_replace("?page=", "/page/", $urlC);
+    //elseif(strstr($urlC, "&page="))
+    //    $urlC = str_replace("&page=", "/page/", $urlC);
+
+
+    if (!isset($params['limit']))
+        $params['limit'] = 10;
+    if (!isset($params['page']))
+        $params['page'] = 1;
+
+
+    if (isset($paramInput))
+        $params = $paramInput;
+
+    if(!isset($params['sortField'])){
+        $params['sortField'] = 'id';
+        $params['sortType'] = "ASC";
+    }
+
+    $option['extra_join_table'] = 'cloud_user';
+    $option['extra_join_on'] = ' v.userid = t.userid';
+    $option['extra_join_field'] = ' , v.glx_bytes_in_avail, v.glx_bytes_in_used';
+
+    //$retArr = $obj->listItem($params);
+    $retArr = $obj->listItemReturnApi($params, $option);
+
+    //echo "<br/>" . MysqliDb::getLastQuery1();
+
+    if(isAdmin_()){
+        //die("ABC = " . MysqliDb::getLastQuery1());
+    }
+
+    //Thêm các biến riêng:
+    $arr_data = null;
+    if ($retArr && isset($retArr['arr_data']))
+        $arr_data = $retArr['arr_data'];
+
+    $info_data = null;
+    if ($retArr && isset($retArr['info_data']))
+        $info_data = $retArr['info_data'];
+
+    $meta_data = null;
+    if ($retArr && isset($retArr['meta_data']))
+        $meta_data = $retArr['meta_data'];
+
+    ?>
+    <div class="row">
+
+        <div class="col-sm-2 ">
+
+            Number Item
+            <select onchange="if (this.value) window.location.href=this.value">
+                <?php
+                $arr = [5, 10, 25, 50, 100];
+                foreach ($arr AS $num){
+                    $padSelect = "";
+                    if($params['limit'] == $num)
+                        $padSelect = " selected ";
+                    ?>
+                    <option <?php echo $padSelect ?> value="<?php $urlOK = \Base\ClassRoute::addOrReplaceParamUrl($urlC, "page");  echo \Base\ClassRoute::addOrReplaceParamUrl($urlOK, "limit", $num); ?>"> <?php
+                        echo $num;
+                        ?> </option>
+                    <?php
+                }
+                ?>
+            </select>
+
+        </div>
+
+        <div class="col-sm-10 ">
+
+            <form action="" method="get" style="display: inline">
+                <?php
+                for ($i = 0; $i < $tmp = count($meta_data); $i++) {
+
+                    $field = $meta_data[$i]['field'];
+                    $search = $meta_data[$i]['searchable'];
+                    $name = $meta_data[$i]['name'];
+                    if($search){
+                        //echo "<br/> $field / $name";
+                        $val = '';
+                        if(isset($params["search_field_$field"]))
+                            $val = $params["search_field_$field"];
+                        echo "$name: <input style='color: red' onchange='' name='search_field_$field' value='$val' type='text' placeholder='Tìm $name'>";
+
+                    }
+
+                }
+
+                echo "<button> SEARCH </button>";
+                echo "</form>";
+                $padStyle = "";
+                if(strstr($urlC, "search_field_")) {
+                    $padStyle = "style='color: white; background-color: brown'";
+                    echo "<a href=\"/$module/$controller/$act\"> <button $padStyle >CANCEL</button></a>";
+                }
+                ?>
+
+
+
+
+
+        </div>
+
+    </div>
+    <?php
+    //
+    //echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+    //print_r($meta_data);
+    //echo "</pre>";
+    //
+    //echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+    //print_r($arr_data);
+    //echo "</pre>";
+    //echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+    //print_r($retArr);
+    //echo "</pre>";
+
+    //echo "<br/>ccc = $act";
+    //echo "<br/> /$module/  $c  /  $act ";
+    ?>
+
+    <?php
+    if(isAdmin_()) {
+        ?>
+
+
+        <a style="" href="<?php
+
+        echo "/$module/$controller/add";
+        ?>">
+            <i class="fa fa-plus-square fa-2x" style="color: darkgreen"></i>
+        </a>
+
+        <?php
+    }
+    ?>
+
+    <?php
+    //require_once "application/block/default_index.php";
+    $nPage = $info_data['nPage'];
+    $totalRow = $info_data['totalRow'];
+
+    $strPaginator = ctoolPaginator::getPaginatorString(\Base\ClassRoute::getFullUriCurrent(), $nPage, $params['page'],
+        $params['limit'], $totalRow);
+
+    ?>
+    <div class="box">
+        <div class="box-body">
+            <div class="dataTables_wrapper form-inline dt-bootstrap">
+                <div style="overflow: auto;overflow-y: hidden;">
+                    <div class="pagination_lad" style="margin: 5px">
+                        <?php
+                        echo "<center>$strPaginator</center>";
+                        ?>
+                    </div>
+                    <table class="table table-bordered table-striped dataTable">
+                        <tr>
+                            <th> STT </th>
+                            <?php
+                            for ($i = 0; $i < $c1 = count($meta_data); $i++) {
+//        echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+//        print_r($meta_data[$i]);
+//        echo "</pre>";
+
+                                $field = $meta_data[$i]['field'];
+                                $fieldMeta = $obj->getMetaNameField($field);
+                                $sortable = $meta_data[$i]['sortable'];
+                                $show_in_index = $meta_data[$i]['show_in_index'];
+                                if(!$show_in_index)
+                                    continue;
+
+                                $padSort = "<i class='fa fa-sort'></i>";
+                                $cancelSort = "";
+                                if($sortable) {
+
+                                    $link = $urlC;
+                                    if(!isset($params['sortField'])) {
+                                        $link .= "/sortField/$field";
+                                    }
+                                    else{
+                                        $link = preg_replace("/\/sortField\/(\w+)/", "/sortField/$field",$link);
+                                    }
+
+                                    if(!isset($params['sortType'])) {
+                                        $link .= "/sortType/ASC";
+                                        $padSort = "<i  title='Sort'  class='fa fa-sort'></i>";
+                                    }
+                                    else{
+                                        $linkCancel = str_replace('/sortType/ASC', '', $link);
+                                        $linkCancel = str_replace('/sortType/DESC', '', $linkCancel);
+                                        $linkCancel = preg_replace("/\/sortField\/(\w+)/", "/",$linkCancel);
+
+                                        if(strstr($link, '/sortType/ASC')) {
+                                            $link = str_replace('/sortType/ASC', '/sortType/DESC', $link);
+                                            if($field == $params['sortField']) {
+                                                $padSort = "<i title='Sort Desc' style='color: red' class='fa fa-sort-desc'></i>";
+                                                $cancelSort = "<a  title='Cancel Sort'  href='$linkCancel'> <i class='fa fa-times'> </i></a>";
+                                            }
+
+                                        }
+                                        elseif(strstr($link, '/sortType/DESC')) {
+                                            $link = str_replace('/sortType/DESC', '/sortType/ASC', $link);
+                                            if($field == $params['sortField']) {
+                                                $padSort = "<i title='Sort ASC'  style='color: red' class='fa fa-sort-asc'></i> ";
+                                                $cancelSort = "<a title='Cancel Sort' href='$linkCancel'> <i class='fa fa-times'> </i></a>";
+                                            }
+                                        }
+
+                                    }
+
+                                    $link = str_replace("//", "/", $link);
+                                    $link = str_replace("//", "/", $link);
+                                    $field = "$cancelSort <a href='$link'>  $padSort $fieldMeta</a>";
+                                }
+
+                                $field = rawurldecode($field);
+
+                                echo "<th>  $fieldMeta </th>";
+                            }
+
+                            ?>
+                        </tr>
+
+                        <?php
+                        for ($x = 0; $x < $c1 = count($arr_data); $x++) {
+//        echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+//        print_r($meta_data[$i]);
+//        echo "</pre>";
+                            $objX = new $class;
+                            if($objX instanceof \Base\ModelBase);
+                            $objX->loadFromArray($arr_data[$x]);
+                            //$objX = $arr_data[$x];
+//        echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+//        print_r($objX);
+//        echo "</pre>";
+                            $id = $objX->id;
+                            echo "<tr>";
+                            $count = $x + 1 + ( $params['page'] -1 ) * $retArr['info_data']['limit'];
+                            echo "<td> $count </td>";
+                            for ($i = 0; $i < $c1 = count($meta_data); $i++) {
+                                $field = $meta_data[$i]['field'];
+                                $editable = $meta_data[$i]['editable'];
+                                $show_in_index = $meta_data[$i]['show_in_index'];
+                                $link_to_view = '';
+                                if(isset($meta_data[$i]['link_to_view']))
+                                    $link_to_view = $meta_data[$i]['link_to_view'];
+                                if(!$show_in_index)
+                                    continue;
+
+                                $val = $objX->$field;
+                                if($field == 'glx_bytes_in_used'){
+                                    echo "<td> ".ByteSize($val)." </td>";
+                                    continue;
+                                }
+                                if($field == 'glx_bytes_in_avail'){
+                                    echo "<td> ".ByteSize($val)." </td>";
+                                    continue;
+                                }
+
+                                $padEdit = $padCancel = $padInput = $padSave = "";
+                                if ($editable) {
+                                    $padEdit = "<i onclick=\"CJSView.editMe('$id', '$field')\" id='edit-$id" . "-$field' class='fa fa-edit'></i> ";
+                                    $padCancel = "<i onclick=\"CJSView.cancelEdit('$id', '$field')\" id='cancel-$id" . "-$field' class='fa fa-times-circle' style='display: none'></i>";
+                                    $padInput = "<input id='input-$id" . "-$field' style='display: none; width:100%' value='$val' title='$val'>";
+                                    $padSave = "<i onclick=\"CJSView.saveEdit('$id', '$field')\" id='save-$id" . "-$field' class='fa fa-save' style='display: none'></i>";
+                                }
+
+                                $title = $val;
+                                //if($field == 'id')
+                                //  $val = qqgetIdFromRand($val);
+                                if($link_to_view)
+                                    $val = "<a href='/$module/$controller/edit/id/$objX->id'>$val</a> ";
+
+                                //}
+
+                                if($objX->isStatusField($field)) {
+                                    $padCheck = $padEdit = '';
+                                    if($val)
+                                        $padCheck = " checked ";
+                                    $padSpan = " <input $padCheck type=\"checkbox\" id=\"status_$field\" onclick='changeStatus(\"$objX->id\" , \"$field\")'> ";
+                                }
+                                else {
+                                    if($editable)
+                                        $padSpan = "<span title='$title' id='span-$id" . "-$field'> $val </span>";
+                                    else
+                                        $padSpan = "<span title='$title'> $val </span>";
+                                }
+
+                                $padDelete = "";
+                                if(isset($objX->delete_date) && $objX->delete_date){
+                                    $padDelete = " style='text-decoration: line-through; color: brown'";
+                                }
+
+                                echo "<td $padDelete> $padEdit $padSave $padCancel $padSpan $padInput </td>";
+
+
+                            }
+
+//                            $userid = $objX->userid;
+//                            $user4s = new ClassUser4S();
+//                            $user4s->getAllInfo($userid);
+//
+//                            $cloud = new \Base\ModelCloudUser();
+//                            $cloud->getOneWhereSql('userid = '.$userid);
+//                            $maxB = ByteSize($cloud->glx_bytes_in_avail);
+//                            $using = ByteSize($cloud->glx_bytes_in_used);
+
+//                            echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+//                            print_r($cloud);
+//                            echo "</pre>";
+
+                            //echo "<td> UID = $userid , $using / $maxB </td>";
+
+                            echo "</tr>";
+                        }
+                        ?>
+
+                    </table>
+                    <div class="pagination_lad">
+                        <?php
+                        echo "<center>$strPaginator</center>";
+                        ?>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+<!-- /.content -->
+<!-- Main content -->
+
+<?php
+echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+print_r($params);
+echo "</pre>";
+
+
+echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+print_r($info_data);
+echo "</pre>";
+
+echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+print_r($meta_data);
+echo "</pre>";
+
+?>
+
+</section>
+
+
+<script>
+
+    CJSView = function () {
+
+    }
+
+
+    CJSView.toggleEdit = function (id, field) {
+
+        var cancel_id_field = 'cancel-' + id + '-' + field;
+        var edit_id_field = 'edit-' + id + '-' + field;
+        var input_id_field = 'input-' + id + '-' + field;
+        var span_id_field = 'span-' + id + '-' + field;
+        var save_id_field = 'save-' + id + '-' + field;
+
+        $("#" + edit_id_field).toggle();
+        $("#" + span_id_field).toggle();
+        $("#" + cancel_id_field).toggle();
+        $("#" + input_id_field).toggle();
+        $("#" + save_id_field).toggle();
+    }
+
+    CJSView.editMe = function (id, field) {
+
+//        alert("Edit: " + id  + " / " + field);
+
+        CJSView.toggleEdit(id, field);
+        var input_id_field = 'input-' + id + '-' + field;
+        $("#" + input_id_field).focus();
+    }
+
+    CJSView.cancelEdit = function (id, field) {
+
+//        alert("cancelEdit: " + id  + " / " + field);
+
+        CJSView.toggleEdit(id, field);
+    }
+
+    CJSView.saveEdit = function (id, field) {
+
+        console.log("saveEdit: " + id  + " / " + field);
+        //alert("saveEdit: " + id  + " / " + field);
+
+
+
+        var newValue = $("#" + 'input-' + id + '-' + field).val().trim();
+        var oldValue = $("#" + 'span-' + id + '-' + field).html().trim();
+
+        console.log(" newValue vs oldValue: '" + newValue + "' / '" + oldValue + '"');
+
+        if (newValue.localeCompare(oldValue) == 0) {
+            showToastWarningBottom(" No change");
+            CJSView.toggleEdit(id, field);
+            return;
+        }
+
+        var data = {};
+        data['id'] = id;
+        data[field] = newValue;
+
+        var urlPost = urlBase + "/save/";
+
+        $.post(urlPost, data, function (result) {
+
+            if (ClassApi.checkReturnApi(result)) {
+                showToastInfoBottom("Done");
+                $("#span-" + id + '-' + field).html(newValue);
+                CJSView.toggleEdit(id, field);
+            }
+            else
+                alert("Some error save?");
+            //
+        });
+    }
+
+</script>
+
+
+<script>
+    $('[id^=input-]').keyup(function (e) {
+        if (e.keyCode === 27) {
+            var id = this.id.split("-")[1];
+            var field = this.id.split("-")[2];
+            CJSView.toggleEdit(id, field);
+        }
+    });
+
+    $('[id^=span-]').dblclick(function (e) {
+
+
+        var id = this.id.split("-")[1];
+        var field = this.id.split("-")[2];
+        CJSView.toggleEdit(id, field);
+    });
+
+    $('[id^=input-]').keypress(function (event) {
+        if (event.keyCode == 13) {
+            var id = this.id.split("-")[1];
+            var field = this.id.split("-")[2];
+            CJSView.saveEdit(id, field);
+        }
+    });
+
+    function changeStatus(id, field) {
+        //alert( id  + "/ " + field);
+
+        var urlPost = urlBase + '/change-status';
+
+        console.log(" changeStatusValue2 URL = " + urlPost);
+
+        var data = {};
+        data['field'] = field;
+        data['id'] = id;
+
+        $.post(urlPost, data, function(result){
+            //alert("Post ret = " + result);
+
+            if(!ClassApi.checkReturnApi(result)) {
+                $("#status_" + field).prop("checked", !$("#status_" + field).prop("checked"));
+                return;
+            }
+
+            //$("#status_" + field)
+
+            showToastInfoBottom("Thay đổi Thành công!", "", 3000);
+
+
+        });
+
+
+    }
+
+</script>
+

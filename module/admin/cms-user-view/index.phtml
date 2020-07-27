@@ -1,0 +1,219 @@
+<!-- Content Header (Page header) -->
+<section class="content-header">
+    <h1>
+        Dashboard
+        <small>Danh sách người dùng</small>
+    </h1>
+    <ol class="breadcrumb">
+        <li><a href="#"><i class="fa fa-dashboard"></i> Home</a></li>
+        <li class="active">User list</li>
+    </ol>
+</section>
+
+<!-- Main content -->
+<section class="content" ng-controller="cms_user_index">
+
+    <?php
+    use Base\ModelBase;
+    use Base\ClassRoute;
+    //die();
+    ?>
+    <link rel="stylesheet" href="<?php echo ClassRoute::getTemplateUri() ?>/bower_components/datatables.net-bs/css/dataTables.bootstrap.min.css">
+
+    <div class="modal-dialog" id="edit_item" style="display: none">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close" ng-click="showEditDialog(false)">
+                    <span aria-hidden="true">×</span></button>
+                <h4 class="modal-title">Edit item</h4>
+            </div>
+            <div class="modal-body">
+                <div  ng-repeat="meta in meta_data" ng-if="meta.editable">
+                    <label ng-model="meta.name"> {{meta.name}} </label> <input type="text" class="form-control" ng-model="editingItem[meta.field]">
+                </div>
+                <span id="status_edit" style="color: brown;"> </span>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default pull-left" ng-click="showEditDialog(false)">Close</button>
+                <button type="button" class="btn btn-primary" ng-click="saveItem()">Save</button>
+            </div>
+        </div>
+        <!-- /.modal-content -->
+    </div>
+    <!-- /.modal-dialog -->
+
+    <!-- View/Edit Modal -->
+    <div class="modal" id="editModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title">Edit item</h4>
+                </div>
+                <div class="modal-body">
+
+                    <div  ng-repeat="meta in meta_data">
+                        <label ng-model="meta.name"> {{meta.name}} </label>
+
+                        <textarea ng-show="meta.editable && meta.is_textarea" class="form-control" ng-model="editingItem[meta.field]"></textarea>
+                        <textarea ng-show="!meta.editable && meta.is_textarea" class="form-control" ng-model="editingItem[meta.field]"></textarea>
+
+                        <input ng-show="meta.editable && !meta.is_textarea" type="text" class="form-control" ng-model="editingItem[meta.field]">
+                        <input ng-show="!meta.editable && !meta.is_textarea" type="text" readonly class="form-control" ng-model="editingItem[meta.field]">
+
+                    </div>
+                    <span id="status_edit" style="color: brown;"> </span>
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default pull-left" ng-click="showEditDialog(false)">Close</button>
+                    <button type="button" class="btn btn-primary" ng-click="saveItem()" ng-show="!isEmpty(arrEditable)">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="box" ng-cloak>
+        <!-- /.box-header -->
+        <div class="box-body">
+            <div class="dataTables_wrapper form-inline dt-bootstrap">
+                <div class="row">
+                    <div class="col-sm-2">
+                        <label>
+                            Show
+                            <select ng-change="selectNumberItem()" ng-model="number_item_per_page" name="example1_length" aria-controls="example1" class="form-control input-sm">
+                                <option value="5" ng-selected="{{number_item_per_page == 5}}">5</option>
+                                <!--                                <option value="6" ng-selected="{{number_item_per_page == 6}}">6</option>-->
+                                <option value="10" ng-selected="{{number_item_per_page == 10}}">10</option>
+                                <option value="25" ng-selected="{{number_item_per_page == 25}}">25</option>
+                                <option value="50" ng-selected="{{number_item_per_page == 50}}">50</option>
+                                <option value="100" ng-selected="{{number_item_per_page == 100}}">100</option>
+                            </select>
+                        </label>
+                    </div>
+                    <div class="col-sm-10">
+                        <div style="float: left; margin: 1px" ng-repeat="meta in meta_data" ng-if="meta.searchable" class="admin_search_able">
+                            <input style="color:red" class="admin_search_field" type="search" ng-enter="searchField()" ng-model="search_field[meta.field]" placeholder="Tìm {{meta.name}}" aria-controls="">
+                        </div>
+                        <div style="float: left; margin: 1px">
+                            <button  class="admin_search_button"  type="submit" ng-click="searchField()">Tìm</button>
+                        </div>
+                        <div style="float: left; margin: 1px">
+                            <button style="background-color: darkred; color: white" class="admin_search_cancel" type="submit" ng-click="searchFieldCancel()"
+                                     ng-show="!isEmpty(search_field) || filter_enable_only == true" >Hủy</button>
+                        </div>
+                    </div>
+
+                </div>
+
+                <br/>
+
+                <div class="row">
+                    <p style="position:fixed;left: 50%;z-index: 10000" ng-hide="dataLoaded">
+                        <i class="fa fa-spinner fa-spin fa-2x"></i>
+                    </p>
+
+                    <!--Paginator-->
+                    <div class="col-sm-5">
+                        <div class="dataTables_info" role="status" aria-live="polite">Showing {{fromItem}} to {{toItem}} of {{totalRow}} entries</div>
+                    </div>
+                    <div class="col-sm-7">
+                        <div class="dataTables_paginate paging_simple_numbers">
+                            <ul class="pagination">
+                                <li  ng-repeat="page in arrPage" class="{{page.class}} ">
+                                    <a href="#" ng-click="page.link!='#' ? getDataList(page.page_number) : ''" >{{page.name}}</a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!--Data Table-->
+                <div style="overflow: auto;overflow-y: hidden;">
+                        <table class="table table-bordered table-striped dataTable" role="grid" aria-describedby="example1_info">
+
+                            <!--table header-->
+                            <thead>
+                            <tr role="row">
+                                <th>STT</th>
+                                <th style=" text-align: center; color: #0a6aa1" >
+                                    <i class="fa fa-plus fa-2x" aria-hidden="true" ng-click="showEditDialog(true, null)" ></i>
+                                </th>
+                                <th><input type="checkbox" ng-click="checkAllItem($event)"> </th>
+
+                                <th ng-repeat="meta in meta_data" ng-if="meta.show_in_index" >
+                                    <span ng-show=" !meta.sortable"> {{meta.name}} </span>
+                                    <a ng-show="meta.sortable" href="" ng-click="sortWithField(meta.field)">{{meta.name}}
+                                        <i ng-show="meta.sortType == 'asc' || meta.sortType == 'desc'"
+                                           class="fa {{meta.sortType == 'desc' ? 'fa-sort-alpha-desc' :  'fa-sort-alpha-asc'}} " aria-hidden="true"></i>
+                                    </a>
+                                    <i ng-click="stopSort()" style="margin-left: 5px; color: brown" ng-show="meta.sortType == 'asc' || meta.sortType == 'desc'" class="fa fa-times" aria-hidden="true"></i>
+                                </th>
+                            </tr>
+                            </thead>
+                            <tbody>
+
+                            <!--table content-->
+                            <tr ng-repeat="record in arr_data">
+                                <td>{{ (currentPage - 1) * number_item_per_page + $index + 1}}</td>
+                                <td style=" text-align: center; color: #0a6aa1">
+                                    <i title="Edit" ng-click="showEditDialog(true, record)" class="fa fa-pencil-square-o fa-2x" aria-hidden="true"  style="color: lightslategray"></i>
+                                    <i title="delete" ng-click="deleteItem($index)" ng-show="record['delete_date'] == ''" class="fa fa-trash fa-2x" aria-hidden="true" style="color: lightslategray"></i>
+                                    <i title="Un Delete" ng-click="unDeleteItem($index)" ng-show="record['delete_date'] > ''" class="fa fa-undo fa-2x" aria-hidden="true" style="color: lightslategray"></i>
+                                </td>
+                                <td><input type="checkbox" ng-model="arr_data[$index]._checkBox" ng-click="checkItem($index)"> </td>
+                                <td ng-repeat="(field, value) in record" ng-if="field.substring(0,1)!='_' && arrShowInIndex[field]"> <!-- Ignore added controller field start with _ -->
+
+                                    <i ng-show="arrEditable[field] && record._editThisField != field && !arrIsStatus[field]" ng-click="editField($parent.$parent.$index, field)"  class="fa fa-pencil-square-o" aria-hidden="true" title="edit"></i>
+
+                                    <span style="color: {{field == 'delete_date' ? 'red':''}}" ng-show="record._editThisField != field && !arrIsStatus[field]">
+                                        {{arr_data[$parent.$parent.$index][field]}}
+                                    </span>
+
+                                    <i ng-click="saveField($parent.$parent.$index, field, value)"  ng-show="record._editThisField == field"  class="fa fa-floppy-o" aria-hidden="true" title="save"></i>
+                                    <i ng-click="cancelEditField($parent.$parent.$index, field)"  ng-show="record._editThisField == field"  class="fa fa-ban" aria-hidden="true" title="cancel"></i>
+                                    <!--                                    ui-keydown="{esc: 'keyCallback($event)'}"-->
+                                    <input id="inp_{{$parent.$parent.$index}}_{{field}}" ng-show="record._editThisField == field"
+                                           ng-esc="cancelEditField($parent.$parent.$index, field)" ng-enter="saveField($parent.$parent.$index, field, value)"
+                                           type="text" class="form-control" ng-model="arr_data[$parent.$parent.$index][field]" style="">
+
+
+                                    <span ng-show="arrIsStatus[field]">
+                                        <i ng-click="changeStatus($parent.$parent.$index, field)" class="fa {{arr_data[$parent.$parent.$index][field] == 1 ? 'fa-toggle-on': 'fa-toggle-off'}} fa-2x" style="color: #0a6aa1" aria-hidden="true"></i>
+                                    </span>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                </div>
+
+                <select ng-model="selectCommandName">
+                    <option ng-repeat="command in batch_command" value="{{command.command}}">{{command.name}}</option>
+                </select>
+                <button ng-click="runCommand()"> Thực hiện </button>
+
+                <!--Paginator-->
+                <div class="row">
+                    <div class="col-sm-5">
+                        <div class="dataTables_info" role="status" aria-live="polite">Showing {{fromItem}} to {{toItem}} of {{totalRow}} entries</div>
+                    </div>
+                    <div class="col-sm-7">
+                        <div class="dataTables_paginate paging_simple_numbers">
+                            <ul class="pagination">
+                                <li  ng-repeat="page in arrPage" class="{{page.class}} ">
+                                    <a href="#" ng-click="getDataList(page.page_number)" >{{page.name}}</a>
+                                </li>
+                            </ul>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- /.box-body -->
+    </div>
+</section>
+<!-- /.content -->
+<!-- Main content -->

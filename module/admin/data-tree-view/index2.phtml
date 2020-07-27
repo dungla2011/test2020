@@ -1,0 +1,71 @@
+<style>
+    #div_search_item_parent{
+        display: none;
+    }
+</style>
+
+<?php
+//Tree Setting
+clsTreeMng::$classFile = \Base\ModelDataFile::class;
+clsTreeMng::$classFolder = \Base\ModelDataFolder::class;
+clsTreeMng::$debugItemUrl = "/tool/cms/item_info.php?cls=".\Base\ModelDataFolder::class;
+?>
+
+DataTree2
+
+<section style="">
+
+
+    <div style="width: 20%; float: left">
+<?php
+clsTreeMng::showMoveModals();
+$mm = clsTreeMng::showTree();
+
+?>
+    </div>
+
+    <div style="width: 78%; float: left">
+
+        <?php
+
+        //    $obj = new modelDataFile2();
+        //    $obj->createMetaTable();
+
+        $obj = new \Base\ModelDataFile();
+        $obj->createMetaTable();
+
+        //    echo "<br/>\nMetaTable: " . $obj->getMetaInfoTable();
+
+        $mt = $obj->getMetaDataApi();
+
+        clsDbTableMng::$class = \Base\ModelDataFile::class;
+        clsDbTableMng::$gidCurrent = 1;
+        clsDbTableMng::$optUrlEditActionInList = "/admin/data-index/view2";
+        clsDbTableMng::$optAddNewUrl = '/admin/data-index/add2';
+        //$obj->getNameDescFromField('1');
+
+        clsDbTableMng::getFilterSearchUI();
+        clsDbTableMng::showTableData1();
+
+        ?>
+    </div>
+
+</section>
+
+<script>
+    clsTree.apiBase = '/a_p_i/admin-data2-list';
+    clsDataTblMng.apiUrl = '/a_p_i/member-data';
+
+</script>
+
+<div style="clear: both"></div>
+<?php
+
+if(isAdmin_()){
+
+   echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+   print_r($mm);
+   echo "</pre>";
+}
+
+?>

@@ -1,0 +1,169 @@
+
+<?php
+$params = \Base\ClassRoute::getArrParams();
+use \Base\CSendPushKit;
+?>
+<!-- Content Header (Page header) -->
+<section class="content-header">
+    <h1>
+        TEST
+        <small>message to ios, android device.</small>
+    </h1>
+    <ol class="breadcrumb">
+        <li><a href="#"><i class="fa fa-dashboard"></i> Home</a></li>
+        <li class="active">Send message test</li>
+    </ol>
+</section>
+
+<section class="content">
+
+
+<form method="post" action="/admin/token-message/send-test-ios">
+
+    <a href="/admin/token-message/send-test-ios"> <b style="color: red">IOS</b> </a> | <a href="/admin/token-message/send-test-android"> Android </a>
+    <br>
+    <br>
+    TokenID IOS:  <input style="width: 300px" type="text" value="<?php echo @$params['device_id'] ?>" name="device_id">
+
+    <br>
+    <br>
+    <table class="table-bordered">
+        <tr>
+            <td>ArrName</td>
+            <td><input type="text" name="arrName"
+                       value="<?php if(isset($params['arrName']) && !empty($params['arrName'])) echo $params['arrName'];  else echo 'aps';?>">
+            </td>
+        </tr>
+        <tr>
+            <td>Info1</td>
+            <td><input type="text" name="info10" value="<?php if(isset($params['info10']) && !empty($params['info10'])) echo $params['info10'];  else echo 'alert';?>"> =>
+                <input type="text" name="info11" value="<?php if(isset($params['info11']) && !empty($params['info11'])) echo $params['info11'];  else echo 'Cộng hòa xã hội... http://abc.com';?>"></td>
+        </tr>
+        <tr>
+            <td>Info2</td>
+            <td><input type="text" name="info20" value="<?php if(isset($params['info20']) && !empty($params['info20'])) echo $params['info20'];  else echo 'badge';?>"> =>
+                <input type="text" name="info21" value="<?php if(isset($params['info21']) && !empty($params['info21'])) echo $params['info21'];  else echo '1';?>"></td>
+        </tr>
+        <tr>
+            <td>Info3</td>
+            <td><input type="text" name="info30" value="<?php if(isset($params['info30']) && !empty($params['info30'])) echo $params['info30'];  else echo 'sound';?>"> =>
+                <input type="text" name="info31" value="<?php if(isset($params['info31']) && !empty($params['info31'])) echo $params['info31'];  else echo 'default';?>"></td>
+        </tr>
+    </table>
+
+    <br><br>
+    <button type="submit" id="sendNow">SEND</button>
+    <br>
+
+
+</form>
+
+
+
+<?php
+
+if($_POST) {
+    echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+    print_r($params);
+    echo "</pre>";
+}
+
+//74a2e1b3d7550105f921cfffbf75d5f4cbca28e0e4805e7e65d87b94c973c5cc
+
+$dir = \Base\ClassRoute::$rootDirApp."/test/test-puskit-apple-ios";
+\Base\CSendPushKit::$pemFile = $dir . '/galaxy_dev.pem';
+
+if(isset($params['device_id']) && !empty($params['device_id'])){
+
+    $deviceToken = trim($params['device_id']);
+    if(strstr($deviceToken,"#") !== false){
+        list($tmp, $deviceToken) = explode("#", $deviceToken);
+    }
+
+
+
+        if(!file_exists(\Base\CSendPushKit::$pemFile))
+            bl("Error: not found pem file?");
+        //die($pemFile);
+        //$pemFile = $dir . '/galaxy_dis.pem';
+        //die($pemFile);
+
+        \Base\CSendPushKit::$contentArr = array(
+                $params['arrName']=>array(
+                    $params['info10']=>$params['info11'],
+                    $params['info20']=>$params['info21'],
+                    $params['info30']=>$params['info31']
+                    )
+        );
+
+//    \Base\CSendPushKit::$contentArr = array(
+//        'aps'=>array(
+//            'alert'=>'Hello, Test message here!',
+//            'badge'=>1,
+//            'sound'=>'default'
+//        )
+//    );
+
+//
+//        die();
+//IPhone 5s, Galaxy Monitor app:
+        //$deviceToken = "74a2e1b3d7550105f921cfffbf75d5f4cbca28e0e4805e7e65d87b94c973c5cc";
+
+
+//Chinh Iphone:
+//$deviceToken = "a59ab385a1d03b6f77bd7517647dd80f5b8367793590fd57b52ca6f366af3888";
+
+
+        //echo "<br/>-- Send SandBox url: gateway.sandbox.push.apple.com:2195<br/>";
+        //\Base\CSendPushKit::sendMessagePushKit($deviceToken, 1);
+        //echo "<br/>-- Send Production url: gateway.push.apple.com:2195<br/>";
+        //\Base\CSendPushKit::sendMessagePushKit($deviceToken, 0);
+
+        echo "<br/>-- Send SandBox url: gateway.sandbox.push.apple.com:2195<br/>";
+        $rt = 0;
+        CSendPushKit::$pemFile = $dir . '/galaxy_dev.pem';
+        if(!file_exists(CSendPushKit::$pemFile)){
+            loi("Not found file ".CSendPushKit::$pemFile);
+        }
+        if(CSendPushKit::sendMessagePushKit($deviceToken, 1))
+            $rt = 1;
+        echo "<br/>-- Send Production url: gateway.push.apple.com:2195<br/>";
+        CSendPushKit::$pemFile = $dir . '/galaxy_dis.pem';
+        if(!file_exists(CSendPushKit::$pemFile)){
+            loi("Not found file ".CSendPushKit::$pemFile);
+        }
+        if(CSendPushKit::sendMessagePushKit($deviceToken, 0))
+            $rt = 1;
+
+
+        echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+        print_r(\Base\CSendPushKit::$contentArr);
+        echo "</pre>";
+//    }
+//    else{
+//        bl(" Not valid info? ");
+//    }
+
+
+
+}
+else{
+    //bl("Not valid info 2?");
+}
+
+
+
+
+if(file_exists(\Base\CSendPushKit::$pemFile)){
+    bl("1000 first char of key file:");
+    $str = file_get_contents(\Base\CSendPushKit::$pemFile);
+    echo "<pre>".substr($str,0,1000)."...</pre>";
+}
+
+
+
+
+?>
+
+
+</section>

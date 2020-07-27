@@ -1,0 +1,72 @@
+<section class="content">
+<?php
+
+$params = \Base\ClassRoute::getArrParams();
+
+//echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+//print_r($params);
+//echo "</pre>";
+
+$module = $params['module'];
+$idModule = $params['idModule'];
+
+$cls = clsDbTableMng::getClassFromTableDb($module);
+
+if(!$cls)
+    loi(" NOT CLASS For table: $module?");
+
+
+$obj = new $cls;
+if($obj instanceof \Base\ModelBase);
+
+//echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+//print_r($obj);
+//echo "</pre>";
+
+if(!$obj->getOne($idModule)){
+    bl("Error: Not found id ($idModule) of $cls?");
+    goto _END;
+}
+
+$snameParent = $obj->getShortNameFromField('parent');
+//echo "<br/>\n x0 $snameParent";
+//Nếu là folder, thì sname parent lấy từ file:
+if(strstr($cls, "Folder")){
+    $clsFile = str_replace("Folder", "File", $cls);
+    //echo "<br/>\n $clsFile";
+    $objFile = new $clsFile;
+    if($objFile instanceof \Base\ModelCloudFile);
+    $snameParent = $objFile->getShortNameFromField('parent');
+    //echo "<br/>\n x1 $clsFile  $snameParent";
+}
+
+$mmClass = [
+    \Base\ModelDataFile::class => '/admin/data-index2/view?id='.$idModule,
+    \Base\ModelDataFolder::class => '/admin/data-index2?ssf_'.$snameParent."=$idModule",
+    \Base\ModelNewsFile::class => '/admin/news-index2/view?id='.$idModule,
+    \Base\ModelNewsFolder::class => '/admin/news-index2/?ssf_'.$snameParent."=$idModule",
+    \Base\ModelCloudFile::class => 'cloud_file_not_defile_url',
+    \Base\ModelCloudFolder::class => '/member/cloud?ssf_'.$snameParent."=$idModule",
+];
+
+foreach ($mmClass AS $class => $link){
+    if($cls == $class){
+        echo "<br/>\n  <a href='$link' target='_blank'> <button class='btn btn-warning'> Chuyển đến quản lý: <b> $obj->name (ID = $obj->id) </b> </button></a>";
+    }
+}
+_END:
+?>
+    <br><br>
+    <a href="/admin/setting-ui/"><button class="btn btn-info"> Trở lại</button></a>
+
+
+
+    <?php
+
+    if(isAdminGroup_()){
+        echo "<br/>\n";
+        echo("CLS = $cls");
+    }
+    ?>
+</section>
+

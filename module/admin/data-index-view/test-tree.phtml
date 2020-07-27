@@ -1,0 +1,202 @@
+<?php
+
+require_once (\Base\ClassRoute::$rootDirApp."/application/block/upload_block.php");
+
+?>
+
+
+<link rel="stylesheet" href="/public/vendor/font-awesome.css">
+<link rel="stylesheet" href="/public/vendor/angular-material.min.css">
+<link href="/public/jquery-ui/jquery-ui.css" rel="stylesheet"/>
+<link href="/public/jQuery-contextMenu/jquery.contextMenu.css" rel="stylesheet"/>
+<link rel="stylesheet" href="/public/toastr/toastr.min.css">
+<link rel="stylesheet" href="/public/css/lad-tree/lad-tree.css">
+
+
+<div ng-app="adminApp" ng-controller="TreeController" id="main_id_div_tree">
+
+    <p id="waitting_icon" style="position:fixed;left: 50%;z-index: 1000000; display: none">
+        <i class="fa fa-spinner fa-spin fa-2x">
+        </i>
+    </p>
+
+    <script type="text/ng-template" id="treePopUpModal">
+        <span style="float: left;" ng-click="toggleNodeLeft(menu.id)">
+            <i style="margin: 0 5px" ng-show="menu.menus" class="fa fa-sort-desc" aria-hidden="true"></i>
+            <i style="margin: 0 5px" ng-show="!menu.menus" class="fa fa-caret-right" aria-hidden="true"></i>
+        </span>
+
+        <button style="border: 0px solid gray; background-color: transparent" id="folderToMove-{{menu.id}}"
+                onclick="ClassTree.choiceFolderToMove(event)"
+                onmouseup="ClassTree.hoverFolderToMove(event)"
+                ng-dblclick="menu.type==0 ? toggleNodeLeft(menu.id) : ''">
+            <i style="color: #6B8E23;" class="fa fa-folder" aria-hidden="true"></i> {{menu.name}}
+        </button>
+
+        <ul class='fa-ul' ng-if="menu.menus">
+            <li ng-repeat="menu in menu.menus" ng-include="'treePopUpModal'">
+            </li>
+        </ul>
+    </script>
+
+    <script type="text/ng-template" id="treeLeft">
+        <!--    <input id="checkBox-{{menu.id}}" style="float: left; margin: 10px 3px 10px 10px " type="checkbox"-->
+        <!--           ng-show="menu.id != 'folder_0'">-->
+
+        <span style="float: left; margin: 3px" ng-show="true" ng-click="toggleNodeLeft(menu.id)">
+            <i style="margin: 0 5px" ng-show="menu.menus" class="fa fa-sort-desc" aria-hidden="true"></i>
+            <i style="margin: 0 5px" ng-show="!menu.menus" class="fa fa-caret-right" aria-hidden="true"></i>
+        </span>
+        <!--loadingRight.id-->
+
+        <!--    <button style="float: right" id="showMenu-ileft-{{menu.id}}" onclick="ClassTree.showMenuClick(event)">[:]</button>-->
+
+        <div class="clDropTreeLad" id="ileft-{{menu.id}}" draggable="true" ondragstart="ClassTree.dragStart(event)"
+             ondrop="ClassTree.dropNow(event)" ondragover="ClassTree.hoverToDrop(event)"
+             ondragleave="ClassTree.leaveDrag(event)"
+             ng-click="menu.type==0 ? loadItemsRight(menu) : ''"
+             ng-dblclick="menu.type==0 ? toggleNodeLeft(menu.id) : ''"
+             style="background-color: {{menu._selecting ? '#ccc' :''}}; color: darkslategray ; font-weight: {{menu.type==0 ? 'bolder' : 'normal'}}">
+
+            <!--        <i style="color: gray;" ng-show="!menu.hasChild && !menu.type " class="fa fa-circle-o"-->
+            <!--           aria-hidden="true"></i>-->
+
+            <i style="color: gray;" ng-show="menu.type" class="fa fa-file-o" aria-hidden="true"></i>
+            <span ng-show="!menu._selecting"> </span>
+
+            <span style="font-weight: bold" ng-show="menu._selecting">  </span>
+            <i style="color: {{menu._selecting ? '#0275d8': '#6B8E23'}}" class="fa fa-folder" aria-hidden="true"></i> {{menu.name}}
+        </div>
+
+
+        <ul class='fa-ul' ng-if="menu.menus">
+            <li ng-repeat="menu in menu.menus" ng-include="'treeLeft'">
+            </li>
+        </ul>
+    </script>
+
+    <div id="parent_div_tree" ng-cloak>
+        <div id="div_left_tree">
+            <ul class='fa-ul' style="margin-left: 3px;">
+                <li ng-repeat="menu in menus" ng-include="'treeLeft'">
+                </li>
+            </ul>
+
+            <br>
+
+        </div>
+        <div id="div_right_tree">
+
+            <div class="clDropTreeLad" id="iright-{{loadingRight ? loadingRight.id : 'folder_0'}}"
+                 ondrop="ClassTree.dropNow(event)" ondragover="ClassTree.hoverToDrop(event)"
+                 ondragleave="ClassTree.leaveDrag(event)">
+                <!--            {{loadingRight ? '' + loadingRight.name : 'Root/'}}-->
+
+                <span ng-repeat="elm in arrCurPath">
+                    <span ng-click="loadItemsRight(elm)">
+                        <i class="fa fa-caret-right" aria-hidden="true"></i>
+                        <b>{{elm.name}}</b>
+                    </span>
+                </span>
+
+                <br>
+                <div ng-repeat="menu in rightMenus" style="border-bottom: 0px solid #ccc">
+                    <input id="checkBox-{{menu.id}}" style="float: left; margin: 8px 3px 10px 10px " type="checkbox"
+                           ng-show="menu.id != 'folder_0'">
+                    <button style="float: right; border: 0px; padding: 0px; margin-right: 10px">
+                            <i style="padding: 5px 9px; margin-top: 3px" class="fa fa-ellipsis-v" aria-hidden="true" id="showMenu-iright-{{menu.id}}" onclick="ClassTree.showMenuClick(event,'right')"></i>
+                    </button>
+
+                    <div class="clDropTreeLad" style="color: darkslategray ; font-weight: {{menu.type==0 ? 'bolder' : 'normal'}}"
+                         id="iright-{{menu.id}}" draggable="true"
+                         ondragstart="ClassTree.dragStart(event)"
+                         ondrop="ClassTree.dropNow(event)" ondragover="ClassTree.hoverToDrop(event)"
+                         ng-dblclick="loadItemsRight(menu)">
+                        <i ng-show="!menu.type" style="color: #6B8E23;" class="fa fa-folder" aria-hidden="true"></i>
+                        <i style="color: gray;" ng-show="menu.type" class="fa fa-file-o" aria-hidden="true"></i>
+                        {{menu.name}}
+<!--                        /id={{menu.id}}-->
+                    </div>
+                </div>
+
+                <i> <span ng-cloak> <br> {{rightMenus.length ? '' : '(empty folder)'}}</span></i>
+            </div>
+            <div ng-show="rightMenus" style="border-top: 1px solid #ccc;padding: 5px 15px 15px 15px ">
+            <input  style="" id="check_all_right" ng-cloak type="checkbox"
+                   onclick="ClassTree.checkAllRight()"> <label style="font-weight: normal" for="check_all_right"> Check all </label>
+            </div>
+
+        </div>
+
+    </div>
+    <!--<script type="text/javascript" src="//code.jquery.com/jquery-1.9.1.js"></script>-->
+
+    <!-- Modal Popup-->
+    <div class="modal" id="myModalTree" tabindex="-1" role="dialog" aria-labelledby="myModalTreeLabel">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                                aria-hidden="true">&times;</span>
+                    </button>
+                    <h4 class="modal-title" id="myModalTreeLabel">Chọn folder để chuyển tới</h4>
+                </div>
+                <div class="modal-body">
+                    <ul class='fa-ul'>
+                        <li ng-repeat="menu in menus" ng-include="'treePopUpModal'">
+                        </li>
+                    </ul>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Hủy</button>
+                    <button type="button" class="btn btn-primary"
+                            onclick="ClassTree.moveItemApi(ClassTree.strMovingArrId, strMovingDestId)">Chuyển
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Edit-->
+    <div class="modal" id="myModalEdit" tabindex="-1" role="dialog" aria-labelledby="myModalTreeLabel">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                                aria-hidden="true">&times;</span>
+                    </button>
+                    <h4 class="modal-title" id="myModalTreeLabel">Nhập tên</h4>
+                </div>
+                <div class="modal-body">
+
+                    <input class="form-ctrl" type="text" ng-show="editingItem" id="editing-{{editingItem.id}}"
+                           ng-model="editingItem.name">
+
+                    <input class="form-ctrl" type="text" ng-show="!editingItem" id="new-item-add">
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Hủy</button>
+                    <button type="button" ng-show="editingItem" class="btn btn-primary"
+                            onclick="ClassTree.saveItemApi()">Lưu
+                    </button>
+                    <button type="button" ng-show="!editingItem" class="btn btn-primary"
+                            onclick="ClassTree.createItemApi()">Tạo mới
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+    var urlBaseApiTree = "http://galaxycloud.vn/a_p_i/member-data/list-tree-folder/?";// ?time=1516245801505&pid=folder_0
+    function doneUploadFile() {
+        alert("DONE upload!");
+    }
+</script>
+
+<script src="/public/jQuery-contextMenu/jquery.contextMenu.js"></script>
+<script src="/public/toastr/toastr.min.js"></script>
+<link rel="stylesheet" href="/application/_js/tree-controller-lad.js">

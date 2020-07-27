@@ -1,0 +1,69 @@
+<section class="content">
+
+<a style="float: right" href="/admin/tme-member"><button class="btn btn-info">FULL MEMBER-LIST</button></a>
+<?php
+
+$params = \Base\ClassRoute::getArrParams();
+
+
+if(!isset($params['id'])){
+    bl(("Not found id to view?"));
+    return;
+}
+
+$obj = new \Base\ModelTmeMember(qqgetIdFromRand($params['id']));
+
+echo "<h3>TME Register User Informattion</h3>";
+
+echo "<table class='glx01'>";
+
+foreach ($obj AS $key => $value){
+
+    if($key == 'siteid')
+        continue;
+
+    echo "<tr>";
+    $key1 = strtoupper($key);
+    echo "<td>$key1</td>";
+    if($key == "gender"){
+        if($value == 1)
+            echo "<td><b> male </b></td>";
+        else
+            echo "<td><b> female </b></td>";
+
+    }
+    elseif($key == "country"){
+
+        $arrCtr  = ClassUtilGlx::getCountryListArray();
+        $found = 0;
+        foreach ($arrCtr as $id => $name) {
+            if($id == $value)
+            {
+                echo "<td><b>$name</b></td>";
+                break;
+            }
+        }
+    }
+    elseif($key == "file_certificate"){
+
+        $link = "https://".DOMAIN_MAIN."/file/".$value;
+
+        if(!empty($value))
+            echo "<td><b><a target='_blank' href='$link'> $link </a></b></td>";
+        else
+            echo "<td> Not upload </td>";
+
+    }
+    else {
+
+
+        echo "<td><b>$value</b></td>";
+    }
+    echo "</tr>";
+}
+
+echo "</table>";
+
+?>
+
+</section>

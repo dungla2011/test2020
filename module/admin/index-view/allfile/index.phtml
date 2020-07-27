@@ -1,0 +1,197 @@
+<!-- Content Header (Page header) -->
+<style>
+    .info2{
+        width: 100%; height: 200px;
+    }
+    .info1{
+        width: 100%; height: 200px;
+    }
+</style>
+<section class="content-header">
+    <b>
+        <?php
+        echo nowyh();
+        ?>
+        <small>
+
+        </small>
+    </b>
+    <ol class="breadcrumb">
+        <li><a href="#"><i class="fa fa-dashboard"></i> Home</a></li>
+        <li class="active">Dashboard</li>
+    </ol>
+</section>
+
+
+
+<!-- Main content -->
+<section class="content">
+    <a href="http://4share.download/tool/_site/4share.download/fshare/thuvienaz/scan_daily/add_fshare_link_by_code.php" target="_blank"> AddLink FS</a>
+
+    <div class="box box-primary">
+        <div class="box-header with-border">
+            <h3 class="box-title">AllFile getlink: </h3>
+        </div><!-- /.box-header -->
+        <?php
+        $logFile = "/var/glx/weblog/4share.download_get_link_download_done.log";
+        //$logstr = CFile::getNByteLast($logFile , 5000);
+        //echo "\n LogFile:".basename(CFile::getFileNameNotExt($logFile));
+
+        $o1 = new ClassLogGetLinkDlMongo();
+        $m1 = $o1->getArrWhere([], ['sort' => ['_id' => -1], 'limit' => 10000]);
+
+        $mDate = [];
+        foreach ($m1 AS $o1) {
+            $date = substr($o1->create, 0,10);
+            if(!isset($mDate[$date]))
+                $mDate[$date] = 0;
+            $mDate[$date]++;
+            if($date < nowy(time() - 10*_NSECOND_DAY))
+                break;
+        }
+
+        echo "<br/>\n";
+        foreach ($mDate AS $date=>$c1){
+            echo " $date ($c1) | ";
+        }
+
+        $logstr = '';
+        $cc = 0;
+        foreach ($m1 AS $o1){
+            $cc++;
+            if($cc > 20)
+                break;
+            $logstr.="$o1->create | $o1->ip | $o1->link4s | $o1->filename\n";
+        }
+
+
+        echo "<textarea class='info2'>$logstr";
+        echo "</textarea>";
+        ?>
+    </div>
+
+
+    <div class="box box-primary">
+        <div class="box-header with-border">
+            <h3 class="box-title">Last Search Info: </h3>
+        </div><!-- /.box-header -->
+        <?php
+        $logFile = "/var/glx/weblog/search/search_log_index.log";
+        $lastIndexInfo = CFile::getNByteLast($logFile , 2000);
+        echo "<textarea class='info1'>$lastIndexInfo";
+        echo "</textarea>";
+        ?>
+    </div>
+
+    <div class="box box-primary">
+        <div class="box-header with-border">
+            <h3 class="box-title">Log SiteMap </h3>
+        </div><!-- /.box-header -->
+        <?php
+        $logFile = "/var/glx/weblog/sitemap_4share.download.log";
+        $logstr = CFile::getNByteLast($logFile , 5000);
+        echo "\n LogFile:".basename(CFile::getFileNameNotExt($logFile));
+        echo "<textarea class='info1'>$logstr";
+        echo "</textarea>";
+        ?>
+    </div>
+
+    <div class="box box-primary">
+        <div class="box-header with-border">
+            <h3 class="box-title">Scan ThuVienA: </h3>
+        </div><!-- /.box-header -->
+        <?php
+        $logFile = "/var/glx/weblog/4share.download/crawle-update_sublink.php";
+        $logstr = CFile::getNByteLast($logFile , 5000);
+        echo "\n LogFile:".basename(CFile::getFileNameNotExt($logFile));
+        echo "<textarea class='info1'>$logstr";
+        echo "</textarea>";
+        ?>
+    </div>
+
+    <?php
+    $folderMon = DEF_MARK_LOG_FILE_MONITOR;
+    ListDirFullToArray($folderMon, $mf);
+    foreach ($mf AS $file){
+        if(strstr($file, ("site_id_".ClassSetting::$siteId."_"))){
+            //echo "\n FILE OK: $file";
+            $logFile = trim(file_get_contents($file));
+            ?>
+            <div class="box box-primary">
+                <?php
+                $logstr = CFile::getNByteLast($logFile , 5000);
+                echo "\n LogFile:".basename(CFile::getFileNameNotExt($logFile));
+                echo "<textarea class='info1'>$logstr";
+                echo "</textarea>";
+                ?>
+            </div>
+
+            <?php
+        }
+    }
+    ?>
+
+    <?php
+    $ret = shell_exec('find /var/ufile* -type f -printf "%s\t%p\n" | sort -nr | head -50');
+    $lines = explode("\n", $ret);
+    ?>
+    <div class="box box-primary">
+        <div class="box-header with-border">
+            <h3 class="box-title">List Big file /var/ufile</h3>
+        </div><!-- /.box-header -->
+        <?php
+        echo "\n List Big file";
+        echo "<textarea class='info2'>";
+        foreach ($lines AS $l){
+            $l = trim($l);
+            if(!$l)
+                continue;
+            list($size, $file) = explode("\t", $l);
+            $size = trim($size);
+            echo "\n ".ByteSize($size). " - $file";
+        }
+        echo "</textarea>";
+        ?>
+    </div>
+
+
+</section>
+<!-- /.content -->
+
+<script>
+    $(document).ready(function(){
+        var $textarea = $('.info1');
+        $textarea.scrollTop($textarea[0].scrollHeight);
+    });
+
+    function saveIPList() {
+        var text1 = $('#ipListBlock').val();
+        //alert("Text = " + text1);
+
+        var data = {};
+        data['ip_list'] = text1;
+        var urlPost = "/a_p_i/admin/save-ip-block-list";
+        $.post(urlPost, data, function(result){
+
+            if(result.indexOf('no_change_ip_list') != -1){
+                showToastWarningTop("NO THING CHANGE!");
+                return;
+            }
+
+            if(result.indexOf('done_change_ip_list') != -1){
+                showToastInfoTop("DONE!");
+            }
+            else{
+                console.log(" Error1 = " + JSON.stringify(result));
+                alert("Error: " + result);
+            }
+
+
+        });
+
+    }
+
+
+
+
+</script>

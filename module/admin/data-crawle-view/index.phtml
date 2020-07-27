@@ -1,0 +1,25 @@
+<?php
+$obj = new \Base\ModelDataLink();
+$urlBase = "/a_p_i/member-data-link";
+//\Base\ClassRoute::$arrParams['sortField'] = 'createdAt';
+//\Base\ClassRoute::$arrParams['sortType'] = 'DESC';
+$module = \Base\ClassRoute::getCurrentModule();
+$controller = \Base\ClassRoute::getCurrentController();
+$act = \Base\ClassRoute::getCurrentAction();
+?>
+<section class="content-header">
+    <h1>
+
+        <a href="<?php
+        echo "/$module/$controller/$act";
+        ?>">
+            DataLinkList
+        </a>
+    </h1>
+</section>
+<!-- Main content -->
+<section class="content">
+    <?php
+    require_once "application/module/admin/demo1-view/index.phtml";
+    ?>
+</section>

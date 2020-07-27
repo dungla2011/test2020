@@ -1,0 +1,82 @@
+
+<section class="content-header">
+    <h1>
+
+        <a href="<?php
+        echo "/$module/$controller/$act";
+        ?>">
+            Add Crawl Link
+        </a>
+    </h1>
+</section>
+
+<section class="content">
+<?php
+$params = \Base\ClassRoute::$arrParams['create_new'] = 1;
+//require_once "view.phtml";
+?>
+
+<!---->
+<!--    <br>-->
+<!--    <h3>Add Multi Link:</h3>-->
+    Nhập mỗi link 1 dòng:
+    <form action="" method="post">
+
+        <textarea name="addlinks" style="width: 100%; height: 200px"></textarea>
+
+        <p></p>
+        <button class="btn btn-info" type="submit">Add</button>
+
+    </form>
+    <br>
+    <a href="/admin/data-crawle/"><button class="btn btn-warning" >Return</button></a>
+
+
+    <?php
+
+    $params = \Base\ClassRoute::getArrParams();
+
+    if(isset($params['addlinks'])){
+        $links = trim($params['addlinks']);
+        $mang = explode("\n", $links);
+
+        if(!$mang || empty($links)){
+            bl("Not found input?");
+        }
+
+        foreach ($mang AS $x){
+            $x = trim($x);
+            if(!$x)
+                continue;
+
+            if(\clsValidate::isURL($x)){
+
+                if(ctoolUrl::getDomainFromUrl($x) != 'animehay.tv'
+                && ctoolUrl::getDomainFromUrl($x) != 'bilutv.org'){
+                    bl("Not valid Link animehay/bilutv.org: $x");
+                    continue;
+                }
+
+                echo "<br/> Import Now: $x";
+
+                $obj = new \Base\ModelDataCrawle();
+                $obj->refer = $x;
+                $obj->status = 1;
+                if(!$obj->isValidate()){
+                    echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+                    print_r(\clsValidate::$arrLastError);
+                    echo "</pre>";
+                }
+                else
+                    $obj->insertDbMe();
+
+
+            }
+
+        }
+
+    }
+
+    ?>
+
+</section>

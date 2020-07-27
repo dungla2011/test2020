@@ -1,0 +1,40 @@
+<?php
+
+$obj = new \Base\ModelPayment();
+$urlBase = "/a_p_i/admin-payment";
+
+\Base\ClassRoute::$arrParams['sortField'] = 'createdAt';
+\Base\ClassRoute::$arrParams['sortType'] = 'DESC';
+
+$module = \Base\ClassRoute::getCurrentModule();
+$controller = \Base\ClassRoute::getCurrentController();
+$act = \Base\ClassRoute::getCurrentAction();
+
+?>
+<section class="content-header">
+    <h1>
+
+        <a href="<?php
+        echo "/$module/$controller/$act";
+        ?>">
+            <?php
+            echo "AdminPayment";
+            ?>
+        </a>
+        <small>list</small>
+    </h1>
+</section>
+
+<!-- Main content -->
+
+
+<section class="content">
+    <?php
+
+
+    require_once "application/module/admin/demo1-view/index.phtml";
+
+
+    ?>
+</section>
+

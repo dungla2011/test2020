@@ -1,0 +1,96 @@
+<!-- Content Header (Page header) -->
+<section class="content-header">
+    <h1>
+        RestoreItem
+        <small>list</small>
+    </h1>
+    <ol class="breadcrumb">
+        <li><a href="#"><i class="fa fa-dashboard"></i> Home</a></li>
+        <li class="active">Index</li>
+    </ol>
+
+    <a style="float: right" href="/admin/change-log-news/">
+    <button style="float: right" class="btn btn-info">Trở lại</button>
+    </a>
+<!--    <button style="float: right" class="btn btn-info" onclick="window.history.back()">Trở lại</button>-->
+
+</section>
+
+
+<?php
+
+$param = \Base\ClassRoute::getArrParams();
+
+if (!isset($param['id']) || !is_numeric($param['id'])) {
+    bl("Not valid id?");
+    return;
+}
+$id = $param['id'];
+$obj = new \Base\ModelChangeLog($id);
+$idItem = $obj->item_id;
+
+$linkEdit = "#";
+
+if ($obj->table_name == \Base\ModelDataFile::getTableName()) {
+    $objX = new \Base\ModelDataFile($idItem);
+    $linkEdit = "/admin/data-index/view/id/$idItem";
+
+}
+elseif ($obj->table_name == \Base\ModelNewsFile::getTableName()) {
+    $objX = new \Base\ModelNewsFile($idItem);
+    $linkEdit = "/admin/news-index/view/id/$idItem";
+
+}
+elseif ($obj->table_name == \Base\ModelBillCenter::getTableName()) {
+
+}
+elseif ($obj->table_name == \Base\ModelDataFolder::getTableName()) {
+    $objX = new \Base\ModelDataFolder($idItem);
+}
+else{
+    bl("Not found obj of table name ($obj->table_name)?");
+    return;
+}
+
+
+?>
+
+<!-- Main content -->
+<section class="content" ng-controller="change_log_news_view" style="overflow-x: scroll;">
+    <?php
+
+    $old = unserialize($obj->old_serial);
+    $new = unserialize($obj->new_serial);
+//    echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+//    print_r($old);
+//    echo "</pre>";
+//
+//    echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+//    print_r($objX);
+//    echo "</pre>";
+
+    $haveChange = 0;
+    foreach ($old AS $key => $value) {
+        if(isset($objX->$key)) {
+            if($objX->$key != $value) {
+                $haveChange = 1;
+                $objX->$key = $value;
+            }
+        }
+    }
+
+    if($haveChange) {
+        $objX->log .= "#" . nowyh() . "| Restore from ChangeID $id, by user: " . getCurrentUserEmail();
+        $objX->updateDbMe();
+        tb("Restore DONE!");
+    }
+    else{
+        bl("Restore but Nothing change?");
+    }
+
+
+
+    ?>
+</section>
+<!-- /.content -->
+<!-- Main content -->

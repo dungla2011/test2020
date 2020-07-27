@@ -1,0 +1,474 @@
+<?php
+$params = \Base\ClassRoute::getArrParams();
+?>
+
+<a href="/admin/music-index/manage/page/2/limit/20/">
+<button>    DUYỆT NHẠC </button>
+</a>
+
+&nbsp;
+<span style="font-size: 18px; color: darkslategray; padding: 5px" id="idPaginator"></span>
+
+<button id="showItemInfo" class="btn btn-info" style="margin: 2px; padding: 2px 5px"> ... </button>
+
+<script>
+    //ClassSettingApp.urlApiMusic = "/a_p_i/admin-music/duyet-nhac/inFolder/0";
+    ClassSettingApp.urlApiMusic = "/a_p_i/admin-music/duyet-nhac";
+
+    <?php
+            if(isset($params['inFolder'])){
+    ?>
+        ClassSettingApp.urlApiMusic = "/a_p_i/admin-music/duyet-nhac/inFolder/<?php echo $params['inFolder'] ?>";
+    <?php
+        }
+    ?>
+
+</script>
+<link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+<style>
+    div {
+        color: black;
+    }
+
+    a {
+        color: black;
+    }
+
+</style>
+
+
+<p id="waitting_icon" style="background-color: transparent;  position:fixed;left: 50%;z-index: 1000000; display: none">
+    <i class="fa fa-spinner fa-spin fa-2x">
+
+    </i>
+</p>
+
+
+<div style="padding: 5px;">
+
+    <div style="background-color: #1e282c; float: left; margin-right: 10px">
+        <?php
+        require_once "application/module/music/index-view/__player.phtml";
+        ?>
+    </div>
+
+    <style>
+        a {
+            color: black;
+        }
+    </style>
+
+    <section style="border: 5px solid #ccc; float: left">
+
+        <?php
+
+            $urlNow = \Base\ClassRoute::getFullUrlCurrent();
+            if(!strstr($urlNow, "checkBefore")){
+                $linkChuaDuyet = str_replace("/page/","/checkBefore/0/page/",$urlNow);
+                $linkDaDuyet = str_replace("/page/","/checkBefore/1/page/",$urlNow);
+
+            }
+            else{
+                $linkChuaDuyet = str_replace("checkBefore/1","checkBefore/0",$urlNow);
+                $linkDaDuyet = str_replace("checkBefore/0","checkBefore/1",$urlNow);
+            }
+
+            $linkDaDuyet = "/admin/music-index/manage/checkBefore/1/page/1/limit/20/";
+            $linkChuaDuyet = "/admin/music-index/manage/checkBefore/0/page/1/limit/20/";
+
+            $linkDaDuyetHay = $linkDaDuyet."inFolder/uv350262";
+
+            $padDaDuyetStyle = $padChuaDuyetStyle = "";
+            if(strstr($urlNow, 'checkBefore/1')){
+                $padDaDuyetStyle = "font-weight: bolder";
+            }
+            else
+            if(strstr($urlNow, 'checkBefore/0')){
+                $padChuaDuyetStyle = "font-weight: bolder";
+            }
+        ?>
+        <a style="text-decoration: underline; <?php echo $padDaDuyetStyle ?>" href="<?php echo $linkDaDuyet ?>"> Đã duyệt </a>
+        |
+        <a style="text-decoration: underline; <?php echo $padDaDuyetStyle ?>" href="<?php echo $linkDaDuyetHay ?>"> Hay </a>
+        |
+        <a style="text-decoration: underline; <?php echo $padChuaDuyetStyle ?>" href="<?php echo $linkChuaDuyet ?>"> Chưa duyệt </a>
+
+        <button id="saveItemOK" class="btn btn-info" style="float: right; margin: 2px; padding: 2px 5px"> SAVE </button>
+
+        [ Quality
+        <input type="radio" name="quality_music" value="0" id="lad_point_0"> 0
+        <input type="radio" name="quality_music" value="1" id="lad_point_1"> 1
+        <input type="radio" name="quality_music" value="2" id="lad_point_2"> 2
+        <input type="radio" name="quality_music" value="3" id="lad_point_3"> 3 ]
+
+        <button id="notGoodAndsaveItemOK" class="btn btn-default" style="float: right; margin: 2px; padding: 2px 5px"> NOT GOOD </button>
+        <button id="dubAndsaveItemOK" class="btn btn-info" style="float: right; margin: 2px; padding: 2px 5px"> SAVE DUB </button>
+
+        <button id="jumpNext10s" class="btn btn-default" style="float: right; margin: 2px; padding: 2px 5px"> Next 10s </button>
+
+        <input id="checkPublic" type="checkbox"> <label for="checkPublic">Public</label>
+
+        <br>
+
+        <?php
+        $arrID = array('vr612609',
+            'th074170',
+            'zu798270',
+            'fh600720','ud891162','qt338514');
+
+        foreach ($arrID AS $key => $value) {
+            $arrID[$key] = qqgetIdFromRand($value);
+        }
+
+        //        echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+        //        print_r($arrID);
+        //        echo "</pre>";
+
+        $str = implode(',', $arrID);
+
+        //echo "<br/> $str ";
+
+        $obj = new \Base\ModelMusicFolder();
+        $padSiteId = ClassDb::getPadSiteIdSql();
+        $ret = $obj->getArrayWhereSql_("$padSiteId id IN ($str) ORDER BY id DESC");
+
+
+        $countForFloatLeft = 0;
+        $count0 = 0;
+        $openDiv = 0;
+        $nLineNewDiv = 10;
+        foreach ($ret as $item) {
+
+            if ($item instanceof \Base\ModelMusicFolder) {
+                $count0++;
+
+                if($countForFloatLeft < $nLineNewDiv && !$openDiv){
+                    echo "<div class='openDiv1' style='float: left; border: 1px solid #ccc'>";
+                    $openDiv = 1;
+                }
+
+                echo "<div style='background-color: snow;padding: 5px; border-right: 1px solid #ccc'> <b>$item->name ($item->id)</b>";
+                //echo "<input type='checkbox' id='check_cat_".qqgetRandFromId($item->id)."'/> <label style='font-weight: normal; margin-right: 10px' id='label_check_".qqgetRandFromId($item->id)."' for='check_cat_".qqgetRandFromId($item->id)."' title='$item->id / ".qqgetRandFromId($item->id)."'> $item->name</label>";
+                $padSiteId = ClassDb::getPadSiteIdSql();
+                $ret1 = $obj->getArrayWhereSql_("$padSiteId parent = $item->id ORDER BY name");
+                if(!$ret1)
+                    continue;
+                $breakLine = ceil(count($ret1) / 20);
+
+                $countI = 0;
+                foreach ($ret1 as $item1) {
+
+                    if ($item1 instanceof \Base\ModelMusicFolder) {
+                        $countForFloatLeft++;
+                        if($countI % $breakLine == 0) {
+                            echo "<br/>";
+                        }
+                        echo "<input type='checkbox' id='check_cat_".qqgetRandFromId($item1->id)."'/> <label style='font-weight: normal; margin-right: 10px' id='label_check_".qqgetRandFromId($item1->id)."' for='check_cat_".qqgetRandFromId($item1->id)."' title='$item1->id / ".qqgetRandFromId($item1->id)."'> $item1->name</label>";
+                        $countI++;
+                    }
+                }
+                echo "</div>";
+
+                if($countForFloatLeft > $nLineNewDiv){
+                    echo "</div>  ";
+                    ?>
+<!--class='openDiv2'-->
+        <?php
+                    $countForFloatLeft = 0;
+                    $openDiv = 0;
+                }
+            }
+
+
+        }
+
+
+        ?>
+
+        <b>Hướng dẫn</b>:
+        <br>
+        - Phím tắt
+        <br>
+        + n: not good
+        <br>
+        + s: save
+        <br>
+        + d: dublicate
+        <br>
+        + mũi tên lên: play/pause
+        <br>
+        + mũi tên sang: next 10 giây
+        <br>
+        + 1: good
+        <br>
+        + 2: medium
+        <br>
+        + 3: bad
+
+
+    </section>
+    <div id="dump_item" style="max-width: 600px; border: 0px solid red; background-color: whitesmoke; display: none">
+    </div>
+    <div style="clear: both;"></div>
+</div>
+
+
+<div style="clear: both;"></div>
+
+
+<script defer src="/public/fontawesome-pro/svg-with-js/js/fontawesome-all.min.js"></script>
+
+<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+
+<script>
+
+    var printObj1 = function(o){
+        var str='';
+
+        for(var p in o){
+            //if(typeof o[p] == 'string'){
+                str+= '<b> ' + p  + '</b>: ' + o[p]+'; </br>';
+            //}else{
+                //str+= p + ': { </br>' + printObj1(o[p]) + '}';
+            //}
+        }
+
+        return str;
+    }
+
+    $('#_player_section').css({'padding-top': '0', 'height': '120'});
+    $('#list_media_div').css({'height': '500px'});
+
+
+    ClassPlayer.duyetNhac = function (item) {
+        //alert("Duyet nhac..." + pos);
+        //ClassPlayer.duyetItemId = id;
+        ClassPlayer.isCheckMode = 1;
+
+        console.log("ITEM = " + JSON.stringify(item));
+
+        var urlApi = "/a_p_i/admin-music/get-item-info/item_id/" + item.id + "/_ts="+ Date.now();
+
+        $("[id^='check_cat_']").prop("checked", false);
+        $("[id^='label_check_']").css("color",'black');
+        $("#checkPublic").prop("checked", false);
+        $("[id^='lad_point_']").prop("checked", false);
+
+        showWaittingIcon()
+        $.get(urlApi, function(data, status){
+            //alert("Data: " + data + "\nStatus: " + status);
+
+            hideWaittingIcon();
+            if(!ClassApi.checkReturnApi(data)){
+                //alert("not valid return api?");
+                return;
+            }
+
+            ClassPlayer.itemCheckNow = item;
+
+            $("#showItemInfo").html("Playing : " +  data.payload.name + " ( in: <b>" + data.payload._parent_path_name + " </b>)");
+            $("#dump_item").html(printObj1(data.payload));
+
+            if(data.payload.lad_point)
+                $("#lad_point_" + data.payload.lad_point).prop("checked", true);
+
+            var payloadEx = data.payloadEx;
+
+            ClassUtil.countActionRemove();
+
+
+            //doi 1 chut de thay tren giao dien
+            setTimeout(function () {
+
+                if(data.payload.status == 1){
+
+                    $("#checkPublic").prop("checked", true);
+                }
+
+                if(data.payload.parent_list){
+                    var arr1 = data.payload.parent_list.split(',');
+                    console.log(" arr1 " + JSON.stringify(arr1));
+                    for(var k = 0; k< arr1.length; k++){
+                        var idOK = arr1[k];
+                        $("#check_cat_" + idOK).prop("checked", true);
+                        $("#label_check_" + idOK).css("color",'blue');
+                    }
+                }
+
+                var scope = angular.element($("#player_with_tree")).scope();
+                if(!scope){
+                    alert("Can not get scope?");
+                }
+                else{
+                    console.log(" payloadEx1 = " + JSON.stringify(scope.payloadEx));
+                    var currentUrl = ClassRoute.getUriFull();
+                    var pageStr = ClassUtil.buildPaginatorHtml(currentUrl, scope.payloadEx.nPage, scope.payloadEx.total);
+                    $("#idPaginator").html(pageStr);
+                }
+                //console.log(" scopex = " + JSON.stringify(scope.arr_data));
+            }, 500);
+        });
+    }
+
+    $("[id^='check_cat_']").click(function () {
+//        alert(this.id);
+
+    })
+
+
+    var dlgItem = $("#dump_item" ).dialog({
+        autoOpen: false,
+        resizable: true,
+        height: "auto",
+        width: "700px",
+        modal: false,
+        buttons: {
+            Cancel: function() {
+                dlgItem.dialog( "close" );
+            }
+        },
+
+    });
+
+    $( "#showItemInfo" ).button().on( "click", function() {
+        window.open("/admin/music-index/view/page/1/id/" + ClassPlayer.itemCheckNow.id,'_blank');
+        //dlgItem.dialog( "open" );
+    });
+
+    setTimeout(function () {
+        $("#notGoodAndsaveItemOK").click(function () {
+            console.log(" Click .. notGoodAndsaveItemOK");
+            $('#check_cat_ur126494').prop('checked', true);
+            $('#saveItemOK').trigger('click');
+        });
+
+
+        $("#dubAndsaveItemOK").click(function () {
+            console.log(" Click .. notGoodAndsaveItemOK");
+            $('#check_cat_kr574675').prop('checked', true);
+            $('#saveItemOK').trigger('click');
+        });
+
+
+        $("#jumpNext10s").click(function () {
+            mplaying.currentTime = mplaying.currentTime + 10;
+        });
+
+
+
+
+    }, 5000);
+
+    $("#saveItemOK").click(function () {
+
+        var idStr = "";
+        $("[id^='check_cat_']").each(function() {
+            var id = this.id.replace("check_cat_",'');
+            if(this.checked){
+                console.log(" chedk = " + id );
+                idStr += "," + id;
+            }
+        });
+
+        var lad_point = $("input[type='radio']:checked").val();
+
+
+
+        var checkPublic = $("#checkPublic").prop("checked");
+
+        var urlApi = "/a_p_i/admin-music/duyet-nhac-add-folder/item_id/" + ClassPlayer.itemCheckNow.id + '/list_folder_new/' + idStr + "/public_me/" + checkPublic;
+        if(typeof lad_point != undefined){
+            urlApi += "/lad_point/" + lad_point;
+        }
+
+        showWaittingIcon();
+        $.get(urlApi, function(data, status) {
+            //alert("Data: " + data + "\nStatus: " + status);
+
+            hideWaittingIcon();
+            if (!ClassApi.checkReturnApi(data)) {
+                //alert("not valid return api?");
+                return;
+            }
+
+            if (data.payload > 0)
+                showToastInfoBottom("Thay đổi thành công!");
+            else
+                showToastWarningBottom("Không có thay đổi!");
+
+            ClassPlayer.playNextContinuous();
+        });
+
+
+        });
+
+
+
+    document.onkeydown = checkKey;
+
+    function checkKey(e) {
+
+        e = e || window.event;
+
+        if (e.keyCode == '38') {
+            if (mplaying.paused) {
+                mplaying.play();
+            }
+            else {
+
+                mplaying.pause();
+            }
+        }
+        else if (e.keyCode == '40') {
+
+        }
+        else if (e.keyCode == '37') {
+            // left arrow
+        }
+        else if (e.keyCode == '39') {
+
+            mplaying.currentTime = mplaying.currentTime + 10;
+        }
+        else if (e.keyCode == '32') {
+            if (mplaying.paused) {
+                mplaying.play();
+            }
+            else {
+
+                mplaying.pause();
+            }
+        }
+        else if (e.keyCode == '78') { //n
+            console.log(" Click .. notGoodAndsaveItemOK");
+            $('#check_cat_ur126494').prop('checked', true);
+            $('#saveItemOK').trigger('click');
+        }
+        else if (e.keyCode == '83') { //s
+            console.log(" Click .. keyCode == '83'");
+            $('#saveItemOK').trigger('click');
+        }
+        else if (e.keyCode == '49') { //1
+            console.log(" Click .. keyCode == 49");
+            $('#check_cat_uv350262').prop('checked', true);
+            $('#saveItemOK').trigger('click');
+        }
+        else if (e.keyCode == '50') { //2
+            console.log(" Click .. keyCode == 50");
+            $('#check_cat_ex645019').prop('checked', true);
+            $('#saveItemOK').trigger('click');
+        }
+        else if (e.keyCode == '51') { //3
+            console.log(" Click .. keyCode == 51");
+            $('#check_cat_ur126494').prop('checked', true);
+            $('#saveItemOK').trigger('click');
+        }
+        else if (e.keyCode == '68') { //d
+            console.log(" Click .. keyCode == 68");
+            $('#check_cat_kr574675').prop('checked', true);
+            $('#saveItemOK').trigger('click');
+        }
+
+    }
+
+
+</script>

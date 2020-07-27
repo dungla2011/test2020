@@ -1,0 +1,190 @@
+<?php
+\Base\ClassUploadSetting::$moduleUploadNow = 'image#';
+\Base\ClassUploadSetting::$getStaticLinkAfterUpload = 1;
+require_once (\Base\ClassRoute::$rootDirApp."/application/block/upload_block.php");
+?>
+<script>
+//    var urlBaseApiTree = "/a_p_i/member-image";// ?time=1516245801505&pid=folder_0
+//    var modulePublicTree = "image";
+//    var viewAsDefaultGridOrTable = 'grid'; //'table'
+
+    function doneUploadFile(data) {
+        //alert("Upload done!");
+
+        console.log(" doneUploadFile data = " + JSON.stringify(data.payload));
+
+        if(!ClassApi.checkReturnApi(data)){
+            alert("Not valid return API after upload done? " + data);
+            return;
+        }
+        console.log(" LINK IMG = " + data.payload[0].link_image_static);
+        $("#img_zone").html($("#img_zone").html() + "<image style='width: 200px; margin: 3px; border: 1px solid darkslategray' src='" + data.payload[0].link_image_static + "'>");
+
+    }
+
+    setTimeout(function () {
+        uploadObj.update({formData: {uploadModule: 'image_module_upload' }});
+    }, 1000);
+</script>
+
+<div id="img_zone" style="border: 1px solid #ccc; padding: 2px">
+Image uploaded:
+</div>
+
+<?php
+$params = \Base\ClassRoute::getArrParams();
+
+if(isset($params['id'])){
+    $idRand = $params['id'];
+    $id = qqgetIdFromRand($params['id']);
+    if(!is_numeric($id)){
+        loi("Not valid id?");
+    }
+
+
+    $obj = new \Base\ModelNewsFile();
+    if(!$obj->getOne($id)){
+        bl("Không tồn tại id này? $idRand");
+        return;
+    }
+
+    $arrEdit = $obj->getArrayEditable();
+
+    echo "<br/><div style='float: left; max-width: 600px; padding : 10px'>";
+
+    echo "<table class='glx01'>";
+    foreach ($arrEdit as $field) {
+        if(!in_array("$field", ['summary','content','parent'])) {
+            $val = $obj->$field;
+            echo "<tr>";
+            $fieldU = strtoupper($field);
+            echo "<td>$fieldU: </td> <td><input class='form-control' id='edit_$field' value='$val'></td>";
+            echo "</tr>";
+        }
+        else{
+
+        }
+    }
+    echo "</table>";
+    echo "</div>";
+}
+?>
+    <div class='div_img_data'>
+        Img0 (Ảnh đại diện)
+        <br>
+    <img class="img_data" src="<?php echo $obj->image0 ?>">
+    </div>
+
+
+<div class="clearfix"></div>
+<br>
+- Summary:
+<textarea style="height: 100px" cols="70" rows="6" id="edit_summary" name="summary"><?php echo $obj->summary; ?></textarea>
+<br>
+- Content:
+<textarea cols="80" id="content" name="content"><?php echo $obj->content; ?></textarea>
+
+<?php
+require_once "application/block/upload_image_clipboard.php";
+require_once "application/block/waitting_icon.php";
+?>
+
+
+
+<script>
+    //CKEDITOR.replace('summary');
+    CKEDITOR.replace('content');
+
+    CKEDITOR.autoGrow_onStartup = false;
+    CKEDITOR.resize_enabled = false;
+
+    CKEDITOR.config.enterMode = CKEDITOR.ENTER_BR;
+    CKEDITOR.config.autoParagraph = false;
+    //CKEDITOR.config.height = auto;
+    CKEDITOR.config.width = 'auto';
+    //CKEDITOR.config.width = 600;
+    CKEDITOR.config.allowedContent = true;
+    CKEDITOR.config.entities = false;
+    CKEDITOR.config.entities_greek = false;
+    CKEDITOR.config.entities_latin = false;
+    CKEDITOR.config.templates_replaceContent = false;
+    CKEDITOR.dtd.$removeEmpty['i'] = false;
+    //CKEDITOR.config.htmlEncodeOutput = false;
+    //CKEDITOR.config.jsplus_include_css={'<?php echo \Base\ClassRoute::getBaseUri()?>/template/public1/css/bootstrap.css'};
+    CKEDITOR.config.contentsCss = '<?php echo \Base\ClassRoute::getBaseUri()?>/template/public1/css/bootstrap.css';
+
+    function saveData() {
+//        alert("Save dataa");
+
+        var data1 = {};
+        <?php
+            foreach ($arrEdit as $field) {
+        ?>
+                data1['<?php echo $field?>'] = $("#edit_" + '<?php echo $field?>').val();
+        <?php
+            }
+        ?>
+
+        //var summary = CKEDITOR.instances['summary'].getData();
+        var summary = $("#edit_summary").val();
+        var content = CKEDITOR.instances['content'].getData();
+
+        data1['summary'] = summary;
+        data1['content'] = content;
+
+        console.log(" DAA1 = " + JSON.stringify(data1));
+        var urlPost = '/a_p_i/news/save/?' + "&id=" + '<?php echo $obj->id ?>';
+        console.log(" urlPost Save = " + urlPost);
+
+        showWaittingIcon();
+        $.post(urlPost, data1, function(result){
+            hideWaittingIcon();
+
+            if(!ClassApi.checkReturnApi(result))
+                return;
+            if(result.payload == 0)
+                showToastWarningBottom("Nothing update?");
+            else
+                showToastInfoBottom("Done?");
+        });
+    }
+
+</script>
+
+
+
+<div class="clearfix"></div>
+<?php
+
+$_publicLink = $obj->getLinkFriendlyUrl("news"); ;
+
+require_once "application/block/view/admin_view.php";
+
+$arr1 = $obj->getArrLinkFriendlyUrlEx();
+echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+print_r($arr1);
+echo "</pre>";
+
+
+echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+print_r($params);
+echo "</pre>";
+
+
+
+if(isset($params['id'])){
+    $id = qqgetIdFromRand($params['id']);
+    if(!is_numeric($id)){
+        loi("Not valid id?");
+    }
+}
+
+unset($obj->content);
+unset($obj->summary);
+
+echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+print_r($obj);
+echo "</pre>";
+?>
+
+

@@ -1,0 +1,171 @@
+<!-- Content Header (Page header) -->
+<section class="content-header">
+    <h1>
+        ChangeLogInfo
+        <small>list</small>
+    </h1>
+    <ol class="breadcrumb">
+        <li><a href="#"><i class="fa fa-dashboard"></i> Home</a></li>
+        <li class="active">Index</li>
+    </ol>
+
+    <a style="float: right" href="/admin/change-log-news/">
+    <button style="float: right" class="btn btn-info">Trở lại</button>
+    </a>
+<!--    <button style="float: right" class="btn btn-info" onclick="window.history.back()">Trở lại</button>-->
+
+</section>
+
+
+<?php
+
+$param = \Base\ClassRoute::getArrParams();
+
+if (!isset($param['id']) || !is_numeric($param['id'])) {
+    bl("Not valid id?");
+    return;
+}
+$id = $param['id'];
+$obj = new \Base\ModelChangeLog($id);
+$idItem = $obj->item_id;
+
+$linkEdit = "#";
+
+$mm = [
+    $obj1 = new \Base\ModelDataFile(),
+    $obj1 = new \Base\ModelDataFolder(),
+    $obj1 = new \Base\ModelNewsFile(),
+    $obj1 = new \Base\ModelNewsFolder(),
+    $obj1 = new \Base\ModelCloudFile(),
+    $obj1 = new \Base\ModelCloudFolder(),
+    $obj1 = new \Base\ModelBillCenter(),
+    $obj1 = new \Base\ModelDataLink(),
+];
+
+
+
+//
+//if ($obj->table_name == \Base\ModelDataFile::getTableName()) {
+//    $objX = new \Base\ModelDataFile($idItem);
+//    $linkEdit = "/admin/data-index/view/id/$idItem";
+//
+//}
+//elseif ($obj->table_name == \Base\ModelNewsFile::getTableName()) {
+//    $objX = new \Base\ModelNewsFile($idItem);
+//    $linkEdit = "/admin/news-index/view/id/$idItem";
+//}
+//elseif ($obj->table_name == \Base\ModelBillCenter::getTableName()) {
+//
+//}
+//elseif ($obj->table_name == \Base\ModelDataFolder::getTableName()) {
+//    $objX = new \Base\ModelDataFolder($idItem);
+//}
+//elseif ($obj->table_name == \Base\ModelDataLink::getTableName()) {
+//    $objX = new \Base\ModelDataLink($idItem);
+//}
+//else{
+//    bl("Not found obj of table name ($obj->table_name)?");
+//    return;
+//}
+
+
+?>
+
+<!-- Main content -->
+<section class="content" ng-controller="change_log_news_view" style="overflow-x: scroll;">
+    <?php
+
+    echo "<br/> - <b>Change Log Info:</b>";
+
+    foreach ($mm as $itemCurrent) {
+        if($itemCurrent instanceof \Base\ModelBase);
+        if($obj->table_name == $itemCurrent->getTableName_()){
+            $itemCurrent->getOne($idItem);
+            echo "<br/>\n Class: " . get_class($itemCurrent);
+            break;
+        }
+    }
+
+    //echo "<br/>Item ID: <a target='_blank' style='color: green; ' href='$linkEdit'><b>$obj->item_id</b></a>";
+    echo "<br/>Item ID: <b>$obj->item_id</b>";
+    echo "<br/>Time changed: $obj->time";
+    echo "<br/>User changed: ".\Base\ModelUserCms::getUserInfoEx($obj->userid,'email');
+    echo "<br/>IP: $obj->ip";
+?>
+
+
+    <br>
+    <br>
+    <a onclick="restoreToVer('/admin/change-log-news/restore/id/<?php echo $id?>')" style="display: inline-block">
+        <button>
+            Restore this version
+        </button>
+    </a>
+    <br><br>
+
+    <script>
+        function restoreToVer(link) {
+            var r = confirm("Are you sure to restore?");
+            if (r == true) {
+                window.location.href = link;
+            }
+        }
+    </script>
+
+    <?php
+
+    if(!$obj->old_serial) {
+
+        if($obj->comment == 'set_status_1')
+            echo "<br/> Action: PUBLIC This Item";
+        else
+            echo "<br/> Action: Un PUBLIC This Item";
+
+    }
+    else{
+
+        $old = unserialize($obj->old_serial);
+        $new = unserialize($obj->new_serial);
+
+        ?>
+        <table class="glx01">
+        <?php
+    //    echo "<tr>";
+    //    echo "<td><button class=\"btn btn-info\">Restore to This version</button></td>";
+    //    echo "<td></td>";
+    //    echo "</tr>";
+
+        foreach ($old AS $key => $value) {
+            $valnew = $new->$key;
+
+            if($value == $valnew)
+                continue;
+
+            echo "<tr>";
+
+            echo "<td style='background-color: green; color: whitesmoke'>$key (Old value)</td>";
+            echo "<td style='background-color: green; color: whitesmoke'>$key (new value)</td>";
+            echo "</tr>";
+
+            if(strlen($value) > 100 || strlen($valnew) > 100){
+                echo "<tr>";
+                echo "<td><textarea style='width: 100%' rows='6'>'$value'</textarea></td>";
+                echo "<td><textarea style='width: 100%' rows='6'>'$valnew'</textarea></td>";
+                echo "</tr>";
+            }
+
+            echo "<tr>";
+            echo "<td>'$value'</td>";
+            echo "<td>'$valnew'</td>";
+
+            echo "</tr>";
+        }
+    ?>
+    </table>
+    <?php
+    }
+    ?>
+
+</section>
+<!-- /.content -->
+<!-- Main content -->

@@ -1,0 +1,1263 @@
+<?php
+//\Base\ClassUploadSetting::$moduleUploadNow = 'image#';
+//require_once (\Base\ClassRoute::$rootDirApp."/application/block/upload_block.php");
+?>
+<script>
+    var urlBaseApiTree = "/a_p_i/news";
+    var modulePublicTree = "news";
+</script>
+<?php
+require_once (\Base\ClassRoute::$rootDirApp."/application/block/tree_block.php");
+?>
+
+<?php
+//require_once (\Base\ClassRoute::$rootDirApp."/application/block/upload_block.php");
+return;
+?>
+
+
+<script src="//code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/js-cookie/2.0.1/js.cookie.min.js"></script>
+<script src="//cdn.jsdelivr.net/npm/ui-contextmenu/jquery.ui-contextmenu.min.js"></script>
+
+<script src="<?php echo ClassRoute::getBaseUri()?>/public/fancy-tree/jquery-ui.custom.js"></script>
+<link rel="stylesheet" href="<?php echo ClassRoute::getBaseUri()?>/template/admin1/bower_components/font-awesome/css/font-awesome.min.css">
+
+
+<link href="<?php echo ClassRoute::getBaseUri()?>/public/fancy-tree/ui.fancytree.css" rel="stylesheet">
+<script src="<?php echo ClassRoute::getBaseUri()?>/public/fancy-tree/jquery.fancytree.js"></script>
+<script src="<?php echo ClassRoute::getBaseUri()?>/public/fancy-tree/jquery.fancytree.dnd5.js"></script>
+<script src="<?php echo ClassRoute::getBaseUri()?>/public/fancy-tree/jquery.fancytree.clones.js"></script>
+<script src="<?php echo ClassRoute::getBaseUri()?>/public/fancy-tree/jquery.fancytree.persist.js"></script>
+
+
+<link href="<?php echo ClassRoute::getBaseUri()?>/public/fancy-tree/prettify.css" rel="stylesheet">
+<script src="<?php echo ClassRoute::getBaseUri()?>/public/fancy-tree/prettify.js"></script>
+<link href="<?php echo ClassRoute::getBaseUri()?>/public/fancy-tree/sample.css" rel="stylesheet">
+<script src="<?php echo ClassRoute::getBaseUri()?>/public/fancy-tree/sample.js"></script>
+<link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css"/>
+
+<script src="<?php echo ClassRoute::getBaseUri()?>/public/fancy-tree/jquery.fancytree.dnd.js"></script>
+<script src="<?php echo ClassRoute::getBaseUri()?>/public/fancy-tree/jquery.fancytree.edit-glx-using.js"></script>
+<script src="<?php echo ClassRoute::getBaseUri()?>/public/fancy-tree/jquery.fancytree.gridnav.js"></script>
+<script src="<?php echo ClassRoute::getBaseUri()?>/public/fancy-tree/jquery.fancytree.table.js"></script>
+
+<style type="text/css">
+    .draggable,
+    .droppable {
+        border: 1px solid green;
+        padding: 3px;
+        background-color: silver;
+    }
+
+    /* Prevent scrolling while DND */
+    ul.fancytree-container {
+        /*
+                height: 200px;
+                overflow: auto;
+        */
+        /*		position: inherit;*/
+    }
+</style>
+
+<script type="text/javascript">
+
+    //var urlApiBase = "http://cms2017.pm33.net<?php echo ClassRoute::getBaseUri()?>/a_p_i/demo-tree";
+//    var urlApiBase = "http://cms2017.pm33.net<?php echo ClassRoute::getBaseUri()?>/a_p_i/data";
+    var urlApiBase = gBaseUrl + "a_p_i/news";
+    var urlApi1 = urlApiBase + "/list-tree-full-fancy/?time=";
+    var urlApi2 = urlApiBase + "/list-tree-folder-fancy/?time=";
+
+    var currentParentNodeKey = null;
+    var currentNodeKey = null;
+
+    function addStatus(str) {
+        var oldStatus = $("#statusok").html();
+        $("#statusok").html(oldStatus + str + "<br>");
+    }
+
+    $(function () {
+        var count = 1;
+        /*
+        TODO: option 'preventTextSelect'?
+            Already implemented, but doesn't always work:
+                }).on("selectstart" + ns, "span.fancytree-title", function(event){
+                    // prevent mouse-drags to select text ranges
+                    // tree.debug("<span title> got event " + event.type);
+                    event.preventDefault();
+        TODO: disable auto-scroll by default:
+          seems to have problems to calculate helper position,
+          --> see here http://api.jqueryui.com/draggable/#event-drag
+              for a possible fix?
+          and enabling scrolling would always require custom changes, like
+          setting the container height?
+        TODO: Revert always flies to top-left corner of container
+        */
+        // Attach the fancytree widget to an existing <div id="tree"> element
+        // and pass the tree options as an argument to the fancytree() function:
+
+
+        $("#tree01").fancytree({
+            extensions: ["edit", "dnd", "persist"],
+            //checkbox: true,
+            source: {
+                url: urlApi1 + Date.now(),
+            },
+            persist: {
+                expandLazy: true,
+                // fireActivate: false,    // false: suppress `activate` event after active node was restored
+                // overrideSource: false,  // true: cookie takes precedence over `source` data attributes.
+                store: "auto" // 'cookie', 'local': use localStore, 'session': sessionStore
+                // Sample for a custom store:
+                // store: {
+                //   get: function(key){ this.info("get(" + key + ")"); return window.sessionStorage.getItem(key); },
+                //   set: function(key, value){ this.info("set(" + key + ", " + value + ")"); window.sessionStorage.setItem(key, value); },
+                //   remove: function(key){ this.info("remove(" + key + ")"); window.sessionStorage.removeItem(key); }
+                // }
+            },
+            edit: {
+                triggerStart: ["f2", "shift+click", "mac+enter"],
+                close: function (event, data) {
+                    if (data.save && data.isNew) {
+                        // Quick-enter: add new nodes until we hit [enter] on an empty title
+                        $("#tree01").trigger("nodeCommand", {cmd: "addSibling"});
+                    }
+                }
+            },
+            postProcess: function (event, data) {
+                var orgResponse = data.response;
+                if (orgResponse && orgResponse.payload) {
+                    if (!ClassApi.checkValidReturnApiObj(orgResponse)) {
+                        alert("postProcess: Not valid data 2?" + orgResponse);
+                        console.log(" orgResponse " + JSON.stringify(orgResponse));
+                        return;
+                    }
+                    data.result = orgResponse.payload;
+                }
+
+
+//                if( orgResponse.status === "ok" ) {
+//                    data.result = orgResponse.result;
+//                } else {
+//                    // Signal error condition to tree loader
+//                    data.result = {
+//                        error: "ERROR #" + orgResponse.faultCode + ": " + orgResponse.faultMsg
+//                    }
+//                }
+            },
+            createNode: function (event, data) {
+                var node = data.node,
+                    $tdList = $(node.tr).find(">td");
+
+                // Span the remaining columns if it's a folder.
+                // We can do this in createNode instead of renderColumns, because
+                // the `isFolder` status is unlikely to change later
+                if (node.isFolder()) {
+                    $tdList.eq(2)
+                        .prop("colspan", 6)
+                        .nextAll().remove();
+                }
+            },
+            lazyLoad: function (event, data) {
+                // data.result = {url: "ajax-sub2.json"}
+            },
+            // --- Node events -------------------------------------------------
+            activate: function (event, data) {
+                //var nodeA = $("#tree01").fancytree("getActiveNode");
+
+                var node = data.node;
+                // acces node attributes
+                //$("#echoActive").text(node.title);
+
+                currentNodeKey = node.key;
+
+                //uploadObj.update({formData: { folder_id: currentNodeKey}});
+
+                var tmpNode = node;
+                var countLoop = 0;
+                var titleNode = node.title;
+                var strPath = "";
+                strPath = titleNode + " <i class=\"fa fa-caret-right\" aria-hidden=\"true\"></i> ";
+
+                if (node.key == 'folder_0') {
+                    titleNode = "";
+                    strPath = ""
+                }
+
+                while (1) {
+                    countLoop++;
+                    if (countLoop > 10)
+                        break;
+                    tmpNode = tmpNode.parent;
+                    if (tmpNode) {
+                        console.log("tmpNode.key = " + tmpNode.key);
+                    }
+                    if (tmpNode.key == 'root_1' || tmpNode.key == 'folder_0') {
+                        break;
+                    }
+                    strPath = "<span onclick='browseFolder(\"" + tmpNode.key + "\")'>" + tmpNode.title + "</span>" + " <i class=\"fa fa-caret-right\" aria-hidden=\"true\"></i> " + strPath;
+                }
+
+                $("#str_path_tree").html(strPath);
+
+
+                console.log("nodeActive1: " + node.key);
+
+                //alert(" node = " + node.title + ' / ' + node.key);
+
+
+                //alert(" currentParentNodeKey = " + currentParentNodeKey);
+
+
+                //addStatus("activate = " + node.title + ' / ' + node.key);
+
+                //reloadTree1();
+                reloadTree2(node.key);
+
+                currentParentNodeKey = node.parent.key;
+
+//                var urlApi21 = urlApi2 + Date.now() + "&pid=" + node.key;
+//
+//                //currentParentNodeKey = node.parent.key;
+//
+//                $.get(urlApi21, function (data, status) {
+//                    $.ui.fancytree.getTree("#tree02").reload(
+//                        data
+//                    );
+//                });
+
+                if (!$.isEmptyObject(node.data)) {
+//					alert("custom node data: " + JSON.stringify(node.data));
+                }
+            },
+            dnd: {
+                preventVoidMoves: true, // Prevent dropping nodes 'before self', etc.
+                preventRecursiveMoves: true, // Prevent dropping nodes on own descendants
+                autoExpandMS: 400,
+                // focusOnClick: true,
+                refreshPositions: true,
+                draggable: {
+                    appendTo: "body",  // We don't want to clip the helper inside container
+                    // scroll: false,
+                    // containment: "parent",  // $("ul.fancytree-container"),
+                    // cursorAt: { left: 5 },
+                    revert: "invalid"
+                    // revert: function(dropped) {
+                    // 	return
+                    // }
+                },
+                dragStart: function (node, data) {
+                    // allow dragging `node`:
+                    return true;
+                },
+                dragEnter: function (node, data) {
+                    return true;
+                },
+                initHelper: function (node, data) {
+                    // Helper was just created: modify markup
+                    var helper = data.ui.helper,
+                        sourceNodes = data.tree.getSelectedNodes();
+
+                    // Store a list of active + all selected nodes
+                    if (!node.isSelected()) {
+                        sourceNodes.unshift(node);
+                    }
+                    helper.data("sourceNodes", sourceNodes);
+                    // Mark selected nodes also as drag source (active node is already)
+                    $(".fancytree-active,.fancytree-selected", tree01.$container)
+                        .addClass("fancytree-drag-source");
+                    // Add a counter badge to helper if dragging more than one node
+                    if (sourceNodes.length > 1) {
+                        helper.append($("<span class='fancytree-childcounter'/>")
+                            .text("+" + (sourceNodes.length - 1)));
+                    }
+                    // Prepare an indicator for copy-mode
+                    helper.prepend($("<span class='fancytree-dnd-modifier'/>")
+                        .text("+").hide());
+                },
+                updateHelper: function (node, data) {
+                    // Mouse was moved or key pressed: update helper according to modifiers
+
+                    // NOTE: pressing modifier keys stops dragging in jQueryUI 1.11
+                    // http://bugs.jqueryui.com/ticket/14461
+                    var event = data.originalEvent,
+                        tree = node.tree,
+                        copyMode = event.ctrlKey || event.altKey;
+
+                    // Adjust the drop marker icon
+//					data.dropMarker.toggleClass("fancytree-drop-copy", copyMode);
+
+                    // Show/hide the helper's copy indicator (+)
+                    data.ui.helper.find(".fancytree-dnd-modifier").toggle(copyMode);
+                    // tree.debug("1", $(".fancytree-active,.fancytree-selected", tree.$container).length)
+                    // tree.debug("2", $(".fancytree-active,.fancytree-selected").length)
+                    // Dim the source node(s) in move-mode
+                    $(".fancytree-drag-source", tree.$container)
+                        .toggleClass("fancytree-drag-remove", !copyMode);
+                    // data.dropMarker.toggleClass("fancytree-drop-move", !copyMode);
+                },
+                dragDrop: function (node, data) {
+
+                    // alert(" call dragDrop");
+
+                    var data1 = "OK";
+
+                    var sourceNodes = data.ui.helper.data("sourceNodes"),
+                        event = data.originalEvent,
+                        copyMode = event.ctrlKey || event.altKey;
+
+                    var strMove = '&move_items=';
+                    var haveNodeMove = 0;
+                    for (var k in sourceNodes) {
+                        console.log("node[" + k + "] to move = " + sourceNodes[k].key + " hitmode = " + data.hitMode);
+
+                        strMove += sourceNodes[k].key + "|";
+                        //Chỉ move nếu khác parent hiện tại
+
+                        if (data.hitMode == 'before' || data.hitMode == 'after') {
+                            if (sourceNodes[k].parent.key != node.parent.key) {
+                                haveNodeMove = 1;
+                            }
+                        }
+                        if (data.hitMode == 'over' && sourceNodes[k].key != node.key) {
+                            haveNodeMove = 1;
+                        }
+
+                        console.log(" sourceNodes[k].parent.key = " + sourceNodes[k].parent.key + ' / node.parent.key = ' + node.parent.key);
+                    }
+                    if (!haveNodeMove) {
+                        //alert("Nothing to move!");
+                        return;
+                    }
+
+
+                    strMove += "&move_to=" + node.key + "&move_mode=" + data.hitMode;
+
+                    console.log("move to = " + node.key + " data mode: " + data.hitMode);
+
+                    var urlApi = urlApiBase + "/move-item-tree?" + strMove + "&_ts=" + Date.now();
+
+                    console.log(" url move = " + urlApi);
+
+                    $("#waitting_icon").show();
+                    //$.get("test.php?time=" + Date.now(), function(data1, status)
+                    $.get(urlApi, function (data1, status) {
+
+                            $("#waitting_icon").hide();
+                            if (!ClassApi.checkValidReturnApiObj(data1)) {
+                                alert("(save-item-tree) Not valid data: " + data1);
+                                return;
+                            }
+                            data1 = data1.payload;
+                            //alert(" call dragDrop");
+
+                            //Khong co gi cap nhat tren DB:
+                            if (data1 == 'update_0_item') {
+                                return;
+                            }
+
+                            if (data1 != "update_ok") {
+                                //alert("Đợi 3 giây, Sau khi get remote thì mới cho Move Item: " + data1 + "\nStatus: " + status);
+                                alert("Move error: " + data1);
+                                return;
+                            }
+                            else {
+                                //alert("OK Move?");
+                            }
+
+                            console.log("sourceNodes = " + (sourceNodes));
+
+                            if (copyMode) {
+                                $.each(sourceNodes, function (i, o) {
+                                    o.copyTo(node, data.hitMode, function (n) {
+                                        delete n.key;
+                                        n.selected = false;
+                                        n.title = "Copy of " + n.title;
+                                    });
+                                });
+                            } else {
+                                $.each(sourceNodes, function (i, o) {
+                                    o.moveTo(node, data.hitMode);
+                                });
+                            }
+
+                            //node.setExpanded();
+                            //Reload tree 1 sau khi tree2 drop sang tree1
+
+                            reloadTree1();
+                            reloadTree2(currentNodeKey);
+
+                            return;
+                        }
+                    );
+                }
+            }
+        }).on("nodeCommand", function (event, data) {
+            // Custom event handler that is triggered by keydown-handler and
+            // context menu:
+            var refNode, moveMode,
+                tree = $(this).fancytree("getTree"),
+                node = tree.getActiveNode();
+
+            switch (data.cmd) {
+                case "moveUp":
+                    refNode = node.getPrevSibling();
+                    if (refNode) {
+                        node.moveTo(refNode, "before");
+                        node.setActive();
+                    }
+                    break;
+                case "moveDown":
+                    refNode = node.getNextSibling();
+                    if (refNode) {
+                        node.moveTo(refNode, "after");
+                        node.setActive();
+                    }
+                    break;
+                case "indent":
+                    refNode = node.getPrevSibling();
+                    if (refNode) {
+                        node.moveTo(refNode, "child");
+                        refNode.setExpanded();
+                        node.setActive();
+                    }
+                    break;
+                case "outdent":
+                    if (!node.isTopLevel()) {
+                        node.moveTo(node.getParent(), "after");
+                        node.setActive();
+                    }
+                    break;
+                case "rename":
+                    if (node.key == 'folder_0') {
+                        alert("Not allow for root folder!");
+                        break;
+                    }
+                    node.editStart();
+                    break;
+                case "remove":
+
+                    if (node.key == 'folder_0') {
+                        alert("Not allow for root folder!");
+                        break;
+                    }
+
+                    if (!confirm("Confirm delete?") == true) {
+                        break;
+                    }
+                    $("#waitting_icon").show();
+                    var urlApi = urlApiBase + "/delete-item-tree/?item_id=" + node.key + "&_ts=" + Date.now();
+                    //$.get("test.php?time=" + Date.now(), function(data1, status) {
+                    $.get(urlApi, function (data1, status) {
+                        $("#waitting_icon").hide();
+                        if (!ClassApi.checkValidReturnApiObj(data1)) {
+                            alert("(save-item-tree) Not valid data: " + data1);
+                            return;
+                        }
+                        data1 = data1.payload;
+                        if (data1 == "OK") {
+                            refNode = node.getNextSibling() || node.getPrevSibling() || node.getParent();
+                            node.remove();
+                            if (refNode) {
+                                refNode.setActive();
+                            }
+                        }
+                        else {
+                            alert("Có lỗi xóa: " + data1);
+                        }
+                    });
+                    break;
+                case "addChild":
+                    node.editCreateNode("child", "");
+                    break;
+                case "addSibling":
+                    node.editCreateNode("after", "");
+                    break;
+                case "cut":
+                    CLIPBOARD = {mode: data.cmd, data: node};
+                    break;
+                case "copy":
+                    CLIPBOARD = {
+                        mode: data.cmd,
+                        data: node.toDict(function (n) {
+                            delete n.key;
+                        })
+                    };
+                    break;
+                case "clear":
+                    CLIPBOARD = null;
+                    break;
+                case "paste":
+                    if (CLIPBOARD.mode === "cut") {
+                        // refNode = node.getPrevSibling();
+                        CLIPBOARD.data.moveTo(node, "child");
+                        CLIPBOARD.data.setActive();
+                    } else if (CLIPBOARD.mode === "copy") {
+                        node.addChildren(CLIPBOARD.data).setActive();
+                    }
+                    break;
+                default:
+                    alert("Unhandled command: " + data.cmd);
+                    return;
+            }
+        }).on("click dblclick", function (e) {
+            //   console.log( e, $.ui.fancytree.eventToString(e) );
+
+
+        }).on("keydown", function (e) {
+            var cmd = null;
+
+            // console.log(e.type, $.ui.fancytree.eventToString(e));
+            switch ($.ui.fancytree.eventToString(e)) {
+                case "ctrl+shift+n":
+                case "meta+shift+n": // mac: cmd+shift+n
+                    cmd = "addChild";
+                    break;
+                case "ctrl+c":
+                case "meta+c": // mac
+                    cmd = "copy";
+                    break;
+                case "ctrl+v":
+                case "meta+v": // mac
+                    cmd = "paste";
+                    break;
+                case "ctrl+x":
+                case "meta+x": // mac
+                    cmd = "cut";
+                    break;
+                case "ctrl+n":
+                case "meta+n": // mac
+                    cmd = "addSibling";
+                    break;
+                case "del":
+                case "meta+backspace": // mac
+                    cmd = "remove";
+                    break;
+                // case "f2":  // already triggered by ext-edit pluging
+                //   cmd = "rename";
+                //   break;
+                case "ctrl+up":
+                    cmd = "moveUp";
+                    break;
+                case "ctrl+down":
+                    cmd = "moveDown";
+                    break;
+                case "ctrl+right":
+                case "ctrl+shift+right": // mac
+                    cmd = "indent";
+                    break;
+                case "ctrl+left":
+                case "ctrl+shift+left": // mac
+                    cmd = "outdent";
+            }
+            if (cmd) {
+                $(this).trigger("nodeCommand", {cmd: cmd});
+                // e.preventDefault();
+                // e.stopPropagation();
+                return false;
+            }
+        });
+
+
+        $("#tree02").fancytree({
+            extensions: ["edit", "dnd", "persist", "table"],
+            checkbox: true,
+            table: {
+                indentation: 20,      // indent 20px per node level
+                nodeColumnIdx: 2,     // render the node title into the 2nd column
+                checkboxColumnIdx: 0  // render the checkboxes into the 1st column
+            },
+
+//			debugLevel: 1,
+            source: {
+                //url: "data.js"
+                url: urlApi2 + Date.now(),
+            },
+            renderColumns: function (event, data) {
+                var node = data.node,
+                    $tdList = $(node.tr).find(">td");
+
+                //console.log("node.key x  = " + node.key);
+
+                // (index #0 is rendered by fancytree by adding the checkbox)
+                $tdList.eq(1).text(node.getIndexHier()).addClass("alignRight");
+                // (index #2 is rendered by fancytree)
+                $tdList.eq(3).text(node.key);
+                $tdList.eq(4).html("<input type='checkbox' name='like' value='" + node.key + "'>");
+            },
+            persist: {
+                expandLazy: true,
+                // fireActivate: false,    // false: suppress `activate` event after active node was restored
+                // overrideSource: false,  // true: cookie takes precedence over `source` data attributes.
+                store: "auto" // 'cookie', 'local': use localStore, 'session': sessionStore
+                // Sample for a custom store:
+                // store: {
+                //   get: function(key){ this.info("get(" + key + ")"); return window.sessionStorage.getItem(key); },
+                //   set: function(key, value){ this.info("set(" + key + ", " + value + ")"); window.sessionStorage.setItem(key, value); },
+                //   remove: function(key){ this.info("remove(" + key + ")"); window.sessionStorage.removeItem(key); }
+                // }
+            },
+            edit: {
+                triggerStart: ["f2", "shift+click", "mac+enter"],
+                close: function (event, data) {
+                    if (data.save && data.isNew) {
+                        // Quick-enter: add new nodes until we hit [enter] on an empty title
+                        $("#tree01").trigger("nodeCommand", {cmd: "addSibling"});
+                    }
+                }
+            },
+            createNode: function (event, data) {
+                var node = data.node,
+                    $tdList = $(node.tr).find(">td");
+
+
+                // Span the remaining columns if it's a folder.
+                // We can do this in createNode instead of renderColumns, because
+                // the `isFolder` status is unlikely to change later
+                if (node.isFolder()) {
+                    $tdList.eq(2)
+                        .prop("colspan", 6)
+                        .nextAll().remove();
+                }
+            },
+            lazyLoad: function (event, data) {
+                //data.result = {url: "ajax-sub2.json"}
+            },
+            postProcess: function (event, data) {
+                //data.result = [{title: "Node created by postProcess"}];
+
+                var orgResponse = data.response;
+                console.log("postProcess 2 orgResponse = " + JSON.stringify(orgResponse));
+
+
+                //If not reloadTree2, it have payload, error number
+                //ReloadTree2 only send data here, not send API return all (include errorNumber and payload)
+                if (orgResponse && orgResponse.payload) {
+                    if (!ClassApi.checkValidReturnApiObj(orgResponse)) {
+                        alert("postProcess: Not valid data 2?" + orgResponse);
+                        console.log(" orgResponse " + JSON.stringify(orgResponse));
+                        return;
+                    }
+                    data.result = orgResponse.payload;
+                }
+
+
+            },
+            // --- Node events -------------------------------------------------
+            activate: function (event, data) {
+//                    if( !$.isEmptyObject(node.data) ){
+//					    alert("custom node data: " + JSON.stringify(node.data));
+//                    }
+
+            },
+            dnd: {
+                preventVoidMoves: true, // Prevent dropping nodes 'before self', etc.
+                preventRecursiveMoves: true, // Prevent dropping nodes on own descendants
+                autoExpandMS: 400,
+                // focusOnClick: true,
+                refreshPositions: true,
+                draggable: {
+                    appendTo: "body",  // We don't want to clip the helper inside container
+                    // scroll: false,
+                    // containment: "parent",  // $("ul.fancytree-container"),
+                    // cursorAt: { left: 5 },
+                    revert: "invalid"
+                    // revert: function(dropped) {
+                    // 	return
+                    // }
+                },
+                dragStart: function (node, data) {
+                    // allow dragging `node`:
+                    return true;
+                },
+                dragEnter: function (node, data) {
+                    return true;
+                },
+                initHelper: function (node, data) {
+                    // Helper was just created: modify markup
+                    var helper = data.ui.helper,
+                        sourceNodes = data.tree.getSelectedNodes();
+
+                    // Store a list of active + all selected nodes
+                    if (!node.isSelected()) {
+                        sourceNodes.unshift(node);
+                    }
+                    helper.data("sourceNodes", sourceNodes);
+                    // Mark selected nodes also as drag source (active node is already)
+                    $(".fancytree-active,.fancytree-selected", tree02.$container)
+                        .addClass("fancytree-drag-source");
+                    // Add a counter badge to helper if dragging more than one node
+                    if (sourceNodes.length > 1) {
+                        helper.append($("<span class='fancytree-childcounter'/>")
+                            .text("+" + (sourceNodes.length - 1)));
+                    }
+                    // Prepare an indicator for copy-mode
+                    helper.prepend($("<span class='fancytree-dnd-modifier'/>")
+                        .text("+").hide());
+                },
+                updateHelper: function (node, data) {
+                    // Mouse was moved or key pressed: update helper according to modifiers
+
+                    // NOTE: pressing modifier keys stops dragging in jQueryUI 1.11
+                    // http://bugs.jqueryui.com/ticket/14461
+                    var event = data.originalEvent,
+                        tree = node.tree,
+                        copyMode = event.ctrlKey || event.altKey;
+
+                    // Adjust the drop marker icon
+//					data.dropMarker.toggleClass("fancytree-drop-copy", copyMode);
+
+                    // Show/hide the helper's copy indicator (+)
+                    data.ui.helper.find(".fancytree-dnd-modifier").toggle(copyMode);
+                    // tree.debug("1", $(".fancytree-active,.fancytree-selected", tree.$container).length)
+                    // tree.debug("2", $(".fancytree-active,.fancytree-selected").length)
+                    // Dim the source node(s) in move-mode
+                    $(".fancytree-drag-source", tree.$container)
+                        .toggleClass("fancytree-drag-remove", !copyMode);
+                    // data.dropMarker.toggleClass("fancytree-drop-move", !copyMode);
+                },
+                dragDrop: function (node, data) {
+                    var data1 = "OK";
+
+                    var sourceNodes = data.ui.helper.data("sourceNodes"),
+                        event = data.originalEvent,
+                        copyMode = event.ctrlKey || event.altKey;
+
+                    var strMove = '&move_items=';
+                    for (var k in sourceNodes) {
+                        console.log("node[" + k + "] to move = " + sourceNodes[k].key);
+                        strMove += sourceNodes[k].key + "|";
+                    }
+                    strMove += "&move_to=" + node.key + "&move_mode=" + data.hitMode;
+
+                    console.log("move to = " + node.key + " data mode: " + data.hitMode);
+
+                    var urlApi = urlApiBase + "/move-item-tree?" + strMove + "&_ts=" + Date.now();
+
+                    console.log(" url move = " + urlApi);
+
+                    $("#waitting_icon").show();
+                    //$.get("test.php?time=" + Date.now(), function(data1, status)
+                    $.get(urlApi, function (data1, status) {
+                            $("#waitting_icon").hide();
+
+                            //alert(" call dragDrop");
+                            if (!ClassApi.checkValidReturnApiObj(data1)) {
+                                alert("(save-item-tree) Not valid data: " + data1);
+                                return;
+                            }
+                            data1 = data1.payload;
+                            if (data1 != "OK") {
+                                //alert("Đợi 3 giây, Sau khi get remote thì mới cho Move Item: " + data1 + "\nStatus: " + status);
+                                alert("Move error: " + data1);
+                                return;
+                            }
+                            else {
+                                //alert("OK Move?");
+                            }
+
+                            console.log("sourceNodes = " + (sourceNodes));
+
+                            if (copyMode) {
+                                $.each(sourceNodes, function (i, o) {
+                                    o.copyTo(node, data.hitMode, function (n) {
+                                        delete n.key;
+                                        n.selected = false;
+                                        n.title = "Copy of " + n.title;
+                                    });
+                                });
+                            } else {
+                                $.each(sourceNodes, function (i, o) {
+                                    o.moveTo(node, data.hitMode);
+                                });
+                            }
+
+                            //node.setExpanded();
+                            //After move to tree 1, expand tree 1
+//                                $("#tree01").fancytree("getTree").visit(function(node){
+//                                    //node.setSelected(false);
+//
+//                                });
+
+                            //return;
+                            //reload tree 2 after drop to t2:
+
+                            //Reload tree 1 sau khi tree2 drop sang tree1
+                            reloadTree1();
+                            reloadTree2(currentNodeKey);
+
+                        }
+                    );
+
+
+                }
+            }
+        }).on("nodeCommand", function (event, data) {
+            // Custom event handler that is triggered by keydown-handler and
+            // context menu:
+            var refNode, moveMode,
+                tree = $(this).fancytree("getTree"),
+                node = tree.getActiveNode();
+
+            switch (data.cmd) {
+                case "moveUp":
+                    refNode = node.getPrevSibling();
+                    if (refNode) {
+                        node.moveTo(refNode, "before");
+                        node.setActive();
+                    }
+                    break;
+                case "moveDown":
+                    refNode = node.getNextSibling();
+                    if (refNode) {
+                        node.moveTo(refNode, "after");
+                        node.setActive();
+                    }
+                    break;
+                case "indent":
+                    refNode = node.getPrevSibling();
+                    if (refNode) {
+                        node.moveTo(refNode, "child");
+                        refNode.setExpanded();
+                        node.setActive();
+                    }
+                    break;
+                case "outdent":
+                    if (!node.isTopLevel()) {
+                        node.moveTo(node.getParent(), "after");
+                        node.setActive();
+                    }
+                    break;
+                case "rename":
+                    node.editStart();
+                    break;
+                case "remove":
+
+                    if (!confirm("Confirm delete?") == true) {
+                        return
+                    }
+                    //alert("remove...");
+
+                    $("#waitting_icon").show();
+
+                    var urlApi = urlApiBase + "/delete-item-tree/?item_id=" + node.key + "&_ts=" + Date.now();
+                    //$.get("test.php?time=" + Date.now(), function(data1, status) {
+                    $.get(urlApi, function (data1, status) {
+                        $("#waitting_icon").hide();
+                        if (!ClassApi.checkValidReturnApiObj(data1)) {
+                            alert("(save-item-tree) Not valid data: " + data1);
+                            return;
+                        }
+                        data1 = data1.payload;
+                        if (data1 == "OK") {
+                            refNode = node.getNextSibling() || node.getPrevSibling() || node.getParent();
+                            node.remove();
+                            if (refNode) {
+                                refNode.setActive();
+                            }
+                        }
+                        else {
+                            alert("Có xóa: " + data1);
+                        }
+                    });
+
+                    break;
+                case "addChild":
+                    node.editCreateNode("child", "");
+                    break;
+                case "addSibling":
+                    node.editCreateNode("after", "");
+                    break;
+                case "cut":
+                    CLIPBOARD = {mode: data.cmd, data: node};
+                    break;
+                case "copy":
+                    CLIPBOARD = {
+                        mode: data.cmd,
+                        data: node.toDict(function (n) {
+                            delete n.key;
+                        })
+                    };
+                    break;
+                case "clear":
+                    CLIPBOARD = null;
+                    break;
+                case "paste":
+                    if (CLIPBOARD.mode === "cut") {
+                        // refNode = node.getPrevSibling();
+                        CLIPBOARD.data.moveTo(node, "child");
+                        CLIPBOARD.data.setActive();
+                    } else if (CLIPBOARD.mode === "copy") {
+                        node.addChildren(CLIPBOARD.data).setActive();
+                    }
+                    break;
+                default:
+                    alert("Unhandled command: " + data.cmd);
+                    return;
+            }
+
+        }).on("dblclick", function (e) {
+            //   console.log( e, $.ui.fancytree.eventToString(e) );
+            var node = $.ui.fancytree.getNode(e);
+
+            if (!node || node.key.indexOf('file_') >= 0) {
+                //alert("Not allow file...");
+                return;
+            }
+            //alert("DB click: " + node.key);
+            browseFolder(node.key);
+        }).on("keydown", function (e) {
+            var cmd = null;
+
+            // console.log(e.type, $.ui.fancytree.eventToString(e));
+            switch ($.ui.fancytree.eventToString(e)) {
+                case "ctrl+shift+n":
+                case "meta+shift+n": // mac: cmd+shift+n
+                    cmd = "addChild";
+                    break;
+                case "ctrl+c":
+                case "meta+c": // mac
+                    cmd = "copy";
+                    break;
+                case "ctrl+v":
+                case "meta+v": // mac
+                    cmd = "paste";
+                    break;
+                case "ctrl+x":
+                case "meta+x": // mac
+                    cmd = "cut";
+                    break;
+                case "ctrl+n":
+                case "meta+n": // mac
+                    cmd = "addSibling";
+                    break;
+                case "del":
+                case "meta+backspace": // mac
+                    cmd = "remove";
+                    break;
+                // case "f2":  // already triggered by ext-edit pluging
+                //   cmd = "rename";
+                //   break;
+                case "ctrl+up":
+                    cmd = "moveUp";
+                    break;
+                case "ctrl+down":
+                    cmd = "moveDown";
+                    break;
+                case "ctrl+right":
+                case "ctrl+shift+right": // mac
+                    cmd = "indent";
+                    break;
+                case "ctrl+left":
+                case "ctrl+shift+left": // mac
+                    cmd = "outdent";
+            }
+            if (cmd) {
+                $(this).trigger("nodeCommand", {cmd: cmd});
+                // e.preventDefault();
+                // e.stopPropagation();
+                return false;
+            }
+        });
+
+        /* Handle custom checkbox clicks */
+        $("#tree02").delegate("input[name=like]", "click", function (e) {
+            var node = $.ui.fancytree.getNode(e),
+                $input = $(e.target);
+            e.stopPropagation();  // prevent fancytree activate for this row
+            if ($input.is(":checked")) {
+                alert("like " + $input.val());
+            } else {
+                alert("dislike " + $input.val());
+            }
+        });
+
+        /*
+         * Context menu (https://github.com/mar10/jquery-ui-contextmenu)
+         */
+        $("#tree01, #tree02").contextmenu({
+            delegate: "span.fancytree-node",
+            menu: [
+                {title: "Edit", cmd: "rename", uiIcon: "ui-icon-pencil"},
+                {title: "Delete", cmd: "remove", uiIcon: "ui-icon-trash"},
+                {title: "----------------"},
+                //{title: "New sibling", cmd: "addSibling", uiIcon: "ui-icon-plus"},
+                {title: "New child", cmd: "addChild", uiIcon: "ui-icon-arrowreturn-1-e"},
+                //{title: "----"},
+                //{title: "Cut", cmd: "cut", uiIcon: "ui-icon-scissors"},
+                //{title: "Copy", cmd: "copy", uiIcon: "ui-icon-copy"},
+                //{title: "Paste as child<kbd>Ctrl+V</kbd>", cmd: "paste", uiIcon: "ui-icon-clipboard", disabled: true}
+            ],
+            beforeOpen: function (event, ui) {
+                var node = $.ui.fancytree.getNode(ui.target);
+
+                $("#tree").contextmenu("enableEntry", "paste", !!CLIPBOARD);
+                node.setActive();
+            },
+            select: function (event, ui) {
+                var that = this;
+                // delay the event, so the menu can close and the click event does
+                // not interfere with the edit control
+                setTimeout(function () {
+                    $(that).trigger("nodeCommand", {cmd: ui.cmd});
+                }, 100);
+            }
+        });
+
+
+        $(".droppable").droppable({
+            drop: function (event, ui) {
+                var node = $(ui.helper).data("ftSourceNode"),
+                    tree = node.tree,
+                    copyMode = event.ctrlKey || event.altKey,
+                    sourceNodes = ui.helper.data("sourceNodes");
+
+                if (!copyMode) {
+                    $.each(sourceNodes, function (i, o) {
+                        o.remove();
+                    });
+                }
+                $(this).append((copyMode ? "Copied " : "Moved ") + sourceNodes.length + " nodes. ");
+            }
+        });
+
+
+        $("#btnDeselectAll2").click(function () {
+
+            $("#tree02").fancytree("getTree").visit(function (node) {
+                node.setSelected(false);
+            });
+            return false;
+        });
+
+        $("#btnSelectAll2").click(function () {
+
+            $("#tree02").fancytree("getTree").visit(function (node) {
+                node.setSelected(true);
+            });
+            return false;
+        });
+
+    });
+
+
+</script>
+
+
+<link rel="stylesheet" type="text/css" href="//code.jquery.com/ui/1.9.2/themes/base/jquery-ui.css">
+
+<style type="text/css">
+    #parent {
+        position: absolute;
+        /*height:100%;*/
+        margin: 0;
+        padding: 0;
+        width: 100%;
+    }
+
+    #div1 {
+        position: relative;
+        float: left;
+        /*height:80%;*/
+        width: 30%;
+        min-width: 200px;
+
+        min-height: 100px;
+    }
+
+    #div2 {
+        position: relative;
+        float: left;
+        /*height:80%;*/
+        min-height: 100px;
+        width: 70%;
+
+    }
+
+    #tree02 {
+        min-height: 100px;
+    }
+</style>
+
+<script type='text/javascript'>
+
+    var CLIPBOARD = null;
+    $(window).on('load', function () {
+        //alert("xxx1");
+
+        if (!currentParentNodeKey) {
+            $("#up_button_tree").hide();
+        }
+
+
+        $("#div1").resizable();
+        $('#div1').resize(function () {
+            $('#div2').width($("#parent001").width() - $("#div1").width());
+        });
+        $(window).resize(function () {
+            $('#div2').width($("#parent001").width() - $("#div1").width());
+            $('#div1').height($("#parent001").height());
+        });
+
+    });
+
+    function reloadTree1() {
+        console.log(" reloadTree1 ");
+        $.get(urlApi1 + Date.now(), function (data, status) {
+            if (!ClassApi.checkValidReturnApiObj(data)) {
+                alert("reloadTree1: Not valid data: ");
+                return;
+            }
+            if(data.payload)
+            $.ui.fancytree.getTree("#tree01").reload(
+                data.payload
+            );
+        });
+    }
+
+    function reloadTree2(pid) {
+
+        console.log(" reloadTree2 " + pid);
+
+        //lad: need remove tr all, if not, may be dublicate entry after move items...
+        $('#tree02 tbody > tr').remove();
+
+        $.get(urlApi2 + Date.now() + '&pid=' + pid, function (data, status) {
+
+            console.log(" reloadTree2 data = " + JSON.stringify(data));
+
+            if (!ClassApi.checkValidReturnApiObj(data)) {
+                alert("reloadTree2: Not valid data: ");
+                return;
+            }
+            if(data.payload)
+            $.ui.fancytree.getTree("#tree02").reload(
+                data.payload
+            );
+        });
+    }
+
+    function gotoUp() {
+
+        //alert("currentParentNodeKey = " + currentParentNodeKey);
+        if (currentParentNodeKey == 'root_1') {
+            $("#up_button_tree").hide();
+            return;
+        }
+        else
+            $("#up_button_tree").show();
+
+
+        var urlApi21 = urlApi2 + Date.now() + "&pid=" + currentParentNodeKey;
+        var tree1 = $("#tree01").fancytree("getTree");
+        //    activeNode = tree.getActiveNode();
+        tree1.visit(function (node) {
+            //console.log(" node.key = " + node.key + " pid = " + node.parent.key);
+            if (node.key == currentParentNodeKey) {
+                currentParentNodeKey = node.parent.key;
+                node.setActive(true);
+                return;
+            }
+        });
+
+        $.get(urlApi21, function (data, status) {
+	if(data)
+            $.ui.fancytree.getTree("#tree02").reload(
+                data
+            );
+        });
+    }
+
+    function browseFolder(id) {
+        //alert("ID = " + id);
+        var urlApi21 = urlApi2 + Date.now() + "&pid=" + id;
+        var tree1 = $("#tree01").fancytree("getTree");
+        //    activeNode = tree.getActiveNode();
+        tree1.visit(function (node) {
+            //console.log(" node.key = " + node.key + " pid = " + node.parent.key);
+            if (node.key == id) {
+                //currentParentNodeKey = node.parent.key;
+                node.setActive(true);
+                return;
+            }
+        });
+
+        $.get(urlApi21, function (data, status) {
+	if(data)
+            $.ui.fancytree.getTree("#tree02").reload(
+                data
+            );
+        });
+    }
+
+
+</script>
+
+
+</head>
+<body class="example">
+
+<p id="waitting_icon" style="background-color: transparent;  position:fixed;left: 50%;z-index: 1000000; display: none">
+    <i class="fa fa-spinner fa-spin fa-2x">
+
+    </i>
+</p>
+
+
+<div id="parent001">
+    <div id="div1">
+        <div id="tree01">
+        </div>
+    </div>
+    <div id="div2">
+        <span style="margin-left: 25px; font-size: 12px;">
+<!--            <i onclick="gotoUp()" id="up_button_tree" class="fa fa-arrow-up" aria-hidden="true"></i>-->
+            <img onclick="browseFolder('folder_0')" src="<?php echo ClassRoute::getBaseUri()?>/public/skin-win8/folder-icons.gif"/> <i
+                    class="fa fa-caret-right" aria-hidden="true"></i>
+            <span id="str_path_tree"></span>
+        </span>
+
+        <table id="tree02">
+            <colgroup>
+                <col width="30px"></col>
+                <col width="30px"></col>
+                <col width="*"></col>
+                <col width="50px"></col>
+                <col width="30px"></col>
+            </colgroup>
+            <thead>
+            <tr>
+                <th></th>
+                <th>#</th>
+                <th></th>
+                <th>Key</th>
+                <th>Like</th>
+            </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+
+
+        <hr>
+
+        <!--        <div id="tree02">-->
+        <!--        </div>-->
+
+        <!--<div>-->
+        <!--<label for="skinswitcher">Skin:</label> <select id="skinswitcher"></select>-->
+        <!--</div>-->
+
+        <button id="btnSelectAll2"> Select All</button>
+        <button id="btnDeselectAll2"> Un select</button>
+
+
+        <button onclick="reloadTree1()"> Reload tree1</button>
+        <button onclick="reloadTree2(currentNodeKey)"> Reload tree2</button>
+
+    </div>
+
+    <div id="statusok" style="border: 1px solid blue; font-size: 11px">
+    </div>
+
+</div>

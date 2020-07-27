@@ -1,0 +1,152 @@
+
+<?php
+$params = \Base\ClassRoute::getArrParams();
+?>
+<!-- Content Header (Page header) -->
+<section class="content-header">
+    <h1>
+        TEST
+        <small>message to ios, android device</small>
+    </h1>
+    <ol class="breadcrumb">
+        <li><a href="#"><i class="fa fa-dashboard"></i> Home</a></li>
+        <li class="active">Send message test</li>
+    </ol>
+</section>
+
+<section class="content">
+
+
+<form method="post" action="/admin/token-message/send-test-android">
+
+    <a href="/admin/token-message/send-test-ios"> IOS </a> | <a href="/admin/token-message/send-test-android"> <b style="color: red">Android </b></a>
+    <br><br>
+    <table>
+        <tr>
+            <td>TokenID Android:</td>
+            <td>
+                <input style="width: 300px" type="text" value="<?php echo @$params['device_id'] ?>" name="device_id">
+                <input type="checkbox"  name="send_data_only">
+            </td>
+
+        </tr>
+        <tr>
+            <td> . </td>
+            <td> </td>
+        </tr>
+
+        <tr>
+            <td>Message Title:</td>
+            <td>
+                <input style="width: 300px" type="text" value="<?php echo @$params['message_title'] ?>" name="message_title">
+            </td>
+        </tr>
+        <tr>
+            <td>Message Body:</td>
+            <td>
+                <input style="width: 300px" type="text" value="<?php echo @$params['message_body'] ?>" name="message_body">
+            </td>
+        </tr>
+
+    </table>
+
+    <br>
+    <button type="submit" id="sendNow">SEND</button>
+    <br>
+
+
+</form>
+
+
+
+<?php
+
+//74a2e1b3d7550105f921cfffbf75d5f4cbca28e0e4805e7e65d87b94c973c5cc
+
+if(isset($params['device_id']) && !empty($params['device_id'])){
+
+    $deviceToken = trim($params['device_id']);
+    if(strstr($deviceToken,"#") !== false){
+        list($tmp, $deviceToken) = explode("#", $deviceToken);
+    }
+
+    $send_data_only = @$params['send_data_only'];
+
+
+    //$objFB = new ClassFrBase();
+    $objSend = new \Base\classSendFirebase();
+    $objSend->api_key = API_FB_KEY_MONITOR_SERVER;
+    //$objSend->api_key = 'AIzaSyDtZuYYV5Ylc54_PKcnHY3sElqZsFZKWSE';
+
+    $tokenFireBase = $deviceToken;
+
+    $message_title = "Title: xin chào, monitor message test đây!";
+    $message_body = "Chào mừng bạn đến với monitor.galaxycloud.vn";
+
+    if($params['message_title'])
+        $message_title = $params['message_title'];
+    if($params['message_body'])
+        $message_body = $params['message_body'];
+
+    $jsonSound = '
+    {
+    "to" : "' . $tokenFireBase . '", 
+    "notification" : {
+    "title" : "'.$message_title.'",
+    "body" : "' . "$message_body" . '",
+    "icon" : "myicon",
+    "sound" : "mysound",
+    },
+    "time_to_live": 36000
+    }';
+
+    $jsonData = '
+    {
+    "to" : "' . $tokenFireBase . '",
+    "data" : {
+      "type" : "command",
+      "command" : "alert_server",
+      "title" : "'.$message_title.'",
+      "dataFull" : "'.$message_body.'"
+    },
+    "time_to_live": 36000
+    }';
+
+    $objSend->json = $jsonData;
+    if($objSend->sendFB())
+        echo "<span style='color: blue'><br/>Send Data OK!</span>";
+    else
+        echo "<span style='color: red'><br/>Send Data Failed!</span>";
+
+    usleep(300000);
+
+    if(!isset($send_data_only) || empty($send_data_only)) {
+        $objSend->json = $jsonSound;
+        if ($objSend->sendFB())
+            echo "<span style='color: blue'><br/>Send Notification OK!</span>";
+        else
+            echo "<span style='color: red'><br/>Send Notification Failed!</span>";
+    }
+    else{
+        echo "<br/> Send data only, not send NF";
+    }
+
+}
+else{
+    bl("Input device id please!");
+}
+
+
+
+if($_POST) {
+    echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+    print_r($params);
+    echo "</pre>";
+}
+
+
+
+?>
+
+
+</section>

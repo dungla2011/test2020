@@ -1,0 +1,317 @@
+<?php
+$params = \Base\ClassRoute::getArrParams();
+
+if(!isAdmin())
+if(getCurrentUserEmail() != 'ads.movies888@gmail.com' && getCurrentUserEmail() != ' phathieu1992@gmail.com'){
+    bl("Not allow!");
+    return;
+}
+
+function showPosAds($id, $nameImg = 'ImgLink')
+{
+    $obj = new modelAdsMng();
+    $obj->getOneId($id);
+
+    $pad = "";
+    if($obj->enable)
+        $pad = "checked";
+
+    echo "<div class='cls1'>
+            <input id='ads_name_$id' value='$obj->name' type=\"text\" style=\"width: 60%; background-color: #ccc\"> (Name #$id)
+            <br>
+            <input id='ads_img_or_video_$id'  value='$obj->img_or_video'  type=\"text\" style=\"width: 60%\"> <a target='_blank' href='$obj->img_or_video'>Url Image</a>
+            <br>
+            <input id='ads_link_$id'  value='$obj->link'  type=\"text\" style=\"width: 60%\"> <a target='_blank' href='$obj->link'>Target link </a> 
+            <br>
+            <input id='ads_expired_$id'  value='$obj->expired'  type=\"text\" style=\"width: 60%\"> (Expired )
+            <br>
+            <input type='checkbox'$pad id='ads_enable_$id'>Enable &nbsp &nbsp
+            <button style=\"width: \" id='ads_save_$id' onclick='saveAdsName(\"$id\")'> SAVE </button></div>";
+}
+
+
+function showPosAdsTvc($id)
+{
+    $obj = new modelAdsMng();
+    $obj->getOneId($id);
+    $pad = "";
+    if($obj->enable)
+        $pad = "checked";
+    echo "<div class='cls1'>
+            <input id='ads_name_$id' value='$obj->name' type=\"text\" style=\"width: 60%; background-color: #ccc\"> (Name #$id)
+            <br>
+            <input id='ads_link_$id'  value='$obj->link'  type=\"text\" style=\"width: 60%\"> <a target='_blank' href='$obj->link'>Link PC</a> 
+            <br>
+            <input id='ads_link2_$id'  value='$obj->link2'  type=\"text\" style=\"width: 60 % \"> <a target='_blank' href='$obj->link'>Link Mobi </a> 
+            <br>
+            <input id='ads_expired_$id'  value='$obj->expired'  type=\"text\" style=\"width: 60%\"> (Expired )
+            <br>
+            <input type='checkbox'$pad id='ads_enable_$id'>Enable &nbsp &nbsp
+            <button style=\"width: \" id='ads_save_$id' onclick='saveAdsName(\"$id\")'> SAVE </button></div>";
+}
+
+?>
+
+<!-- Content Header (Page header) -->
+<section class="content-header">
+    <h1>
+        ADS Management
+        <small>list</small>
+    </h1>
+    <ol class="breadcrumb">
+        <li><a href="#"><i class="fa fa-dashboard"></i> Home</a></li>
+        <li class="active">Demo list</li>
+    </ol>
+</section>
+
+<style>
+    button{
+        margin: 3px;
+    }
+    div {
+        padding: 2px;
+    }
+    div.cls1 {
+        border: 1px solid gray;
+
+    }
+
+    hr {
+        color: brown;
+        border: 1px solid green;
+    }
+    td{
+        padding: 20px;
+    }
+</style>
+
+<!-- Main content -->
+<section class="content">
+
+    <?php
+
+    clsUpload::uploadFileForm();
+
+    ?>
+
+    <a href="/member/cloud/" target="_blank"> All uploaded Images</a>
+
+    <div style="clear: both"></div>
+
+    <br>
+
+    <div id="new_img">
+
+
+
+    </div>
+
+    <table class="container cls1" style="background-color: snow">
+        <tr>
+            <td></td>
+            <td> TRANG CHỦ PC</td>
+            <td></td>
+        </tr>
+        <tr>
+            <td style="width: 20%">
+
+                <?php
+                showPosAds(1);
+
+                echo "<br/>\n";
+                showPosAds(2);
+                ?>
+
+            </td>
+
+            <td style="width: 58%; text-align: ">
+
+                <div style="max-width: 300px; margin: 0px auto">
+                <?php
+                showPosAds(3);
+                ?>
+                </div>
+
+
+                <br>
+                <br>
+                <div style="max-width: 300px; margin: 0px auto">
+                    <?php
+                    showPosAds(4);
+                    ?>
+                </div>
+
+                <div style="max-width: 300px; margin: 0px auto">
+                    <?php
+                    showPosAds(5);
+                    ?>
+                </div>
+
+            </td>
+
+            <td style="width: 20%">
+                <?php
+                showPosAds(6);
+                echo "<br/>\n";
+                showPosAds(7);
+                ?>
+            </td>
+
+
+        </tr>
+    </table>
+
+    <br>
+    <table class="container" style="background-color: snow">
+        <tr>
+            <td></td>
+            <td> TRANG CHỦ MOBI</td>
+            <td></td>
+        </tr>
+        <tr>
+            <td style="width: 20%">
+
+
+            </td>
+
+            <td style="width: 58%; text-align: ">
+
+                <div style="max-width: 300px; margin: 0px auto">
+                    <?php
+                    showPosAds(11);
+                    ?>
+                </div>
+
+
+                <br>
+                <br>
+                <div style="max-width: 300px; margin: 0px auto">
+                    <?php
+                    showPosAds(12);
+                    ?>
+                </div>
+
+                <div style="max-width: 300px; margin: 0px auto">
+                    <?php
+                    showPosAds(13);
+                    ?>
+                </div>
+
+            </td>
+
+            <td style="width: 20%">
+
+            </td>
+
+
+        </tr>
+    </table>
+
+    <br>
+
+    <table class="container cls1" style="background-color: snow">
+        <tr>
+            <td></td>
+            <td> TRANG PLAY PHIM PC/MOBI</td>
+            <td></td>
+        </tr>
+        <tr>
+            <td style="width: 20%">
+
+            </td>
+
+            <td style="width: 58%; text-align: ">
+                <div style="max-width: 300px; margin: 0px auto">
+                <?php
+                showPosAds(8);
+                ?>
+                </div>
+                <br>
+                <div style="max-width: 300px; margin: 0px auto">
+                    <?php
+                    showPosAdsTvc(9);
+                    ?>
+                </div>
+                <br>
+                    <div style="max-width: 300px; margin: 0px auto">
+                <?php
+                showPosAds(10);
+                ?>
+                    </div>
+            </td>
+
+            <td style="width: 20%">
+
+            </td>
+
+
+        </tr>
+    </table>
+
+    <br>
+
+    <div class="container" style="background-color: snow; ">
+        <div style="max-width: 300px; margin: 0 auto; text-align: ">
+        <?php
+        //showPosAds("POP_UP");
+        showPosAds(14);
+        ?>
+        </div>
+    </div>
+
+    <br>
+
+
+</section>
+<!-- /.content -->
+<!-- Main content -->
+
+<script>
+    clsUpload.url_server = "/a_p_i/member-cloud/upload_v2";
+
+    function uploadDone1(data) {
+        var data1 = JSON.parse(data);
+        console.log(" Upload done uploadDone1: " , data1);
+
+        if(!ClassApi.checkReturnApi(data1)){
+            return;
+        }
+
+        console.log(" data.payload.id_cloud = ", data1.payload[0].static_link);
+
+        var linkImg = data1.payload[0].static_link;
+
+        $("#new_img").append('<img onclick="window.open(\'' + linkImg + '\', \'_blank\')" style="width: 200px; margin: 5px" src="' + data1.payload[0].static_link + '">');
+
+    }
+
+    function saveAdsName(id) {
+
+//        alert("ID = " + id);
+
+        var data = {};
+        data.name           = $("#ads_name_" + id).val();
+        data.img_or_video   = $("#ads_img_or_video_" + id).val();
+        data.link           = $("#ads_link_" + id).val();
+        data.link2          = $("#ads_link2_" + id).val();
+        data.expired        = $("#ads_expired_" + id).val();
+
+        if($("#ads_enable_" + id).is(':checked'))
+            data.enable = 1;
+        else
+            data.enable = 0;
+
+        var urlPost = "/a_p_i/admin-ads-mng/save?_id=" + id;
+
+        $.post(urlPost, data, function(result){
+            if(!ClassApi.checkReturnApi(result)){
+                  return;
+            }
+
+            //alert("Data: " + result);
+            showToastBottom("RESULT : " + result);
+
+        });
+    }
+
+</script>

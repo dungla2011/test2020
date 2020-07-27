@@ -1,0 +1,1073 @@
+<link rel="stylesheet" href="/public/vendor/bootstrap.css">
+<link rel="stylesheet" href="/public/vendor/angular-material.min.css">
+<link rel="stylesheet" href="/public/vendor/font-awesome.css">
+<link href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css" rel="stylesheet"/>
+<link href="https://swisnl.github.io/jQuery-contextMenu/dist/jquery.contextMenu.css" rel="stylesheet"/>
+<link rel="stylesheet" href="/public/toastr/toastr.min.css">
+<link rel="stylesheet" href="tree-lad.css">
+<link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet"/>
+
+<style>
+    #parent_div_tree {
+        position: absolute;
+
+        margin: 0;
+        padding: 0;
+        width: 80%;
+    }
+
+    #div_left_tree {
+        position: relative;
+        float: left;
+        height: auto;
+        max-width: 80%;
+        min-width: 10%;
+
+        /*overflow-x:auto;*/
+        /*overflow-y:hidden;*/
+        overflow: hidden;
+        white-space: nowrap;
+    }
+
+    #div_right_tree {
+        position: relative;
+        float: left;
+        height: auto;
+        /*width: 50%;*/
+
+        overflow-x:auto;
+        overflow-y:hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .ui-resizable-e{
+        background-image:none;
+        background-color: gray;
+    }
+
+
+    .clDrop {
+        /*width: 350px;*/
+        min-height: 35px;
+        padding: 5px;
+        border: 1px solid #aaaaaa;
+        margin: 5px 0;
+
+    }
+
+</style>
+
+<div ng-app="adminApp" ng-controller="TreeController" id="main_id_div_tree">
+
+    <a href="">WELCOME ANGULAR-JS TEST - TREE</a>
+
+    <p id="waitting_icon" style="position:fixed;left: 50%;z-index: 1000000; display: none">
+        <i class="fa fa-spinner fa-spin fa-2x">
+        </i>
+    </p>
+
+    <script type="text/ng-template" id="treeModal">
+        <span style="float: left;" ng-show="menu._hasChild" ng-click="toggleNodeLeft(menu.id)">{{ menu.menus? '[-]' : '[+]'}}</span>
+        <button style="border: 1px solid gray" id="folderToMove-{{menu.id}}"
+                onclick="ClassTree.choiceFolderToMove(event)">
+            {{menu.name}} /id={{menu.id}}
+        </button>
+        <ul class='fa-ul' ng-if="menu.menus">
+            <li ng-repeat="menu in menu.menus" ng-include="'treeModal'">
+            </li>
+        </ul>
+    </script>
+
+    <script type="text/ng-template" id="treeLeft">
+        <!--    <input id="checkBox-{{menu.id}}" style="float: left; margin: 10px 3px 10px 10px " type="checkbox"-->
+        <!--           ng-show="menu.id != 'folder_0'">-->
+
+        <span style="float: left; margin: 3px" ng-show="true" ng-click="toggleNodeLeft(menu.id)">
+        <i ng-show="menu.menus" class="fa fa-sort-desc" aria-hidden="true"></i>
+        <i ng-show="!menu.menus" class="fa fa-caret-right" aria-hidden="true"></i>
+    </span>
+        <!--loadingRight.id-->
+
+        <!--    <button style="float: right" id="showMenu-ileft-{{menu.id}}" onclick="ClassTree.showMenuClick(event)">[:]</button>-->
+
+        <div class="clDrop" id="ileft-{{menu.id}}" draggable="true" ondragstart="ClassTree.dragStart(event)"
+             ondrop="ClassTree.dropNow(event)" ondragover="ClassTree.hoverToDrop(event)"
+             ondragleave="ClassTree.leaveDrag(event)"
+             ng-click="menu.type==0 ? loadItemsRight(menu) : ''"
+             ng-dblclick="menu.type==0 ? toggleNodeLeft(menu.id) : ''"
+             style="background-color: {{menu.selecting ? '#eee' :''}}">
+
+            <!--        <i style="color: gray;" ng-show="!menu.hasChild && !menu.type " class="fa fa-circle-o"-->
+            <!--           aria-hidden="true"></i>-->
+
+            <i style="color: gray;" ng-show="menu.type" class="fa fa-file-o" aria-hidden="true"></i>
+            <span ng-show="!menu.selecting"> </span>
+
+            <span style="font-weight: bold" ng-show="menu.selecting">  </span>
+
+            {{menu.name}} /id={{menu.id}}
+        </div>
+
+
+        <ul class='fa-ul' ng-if="menu.menus">
+            <li ng-repeat="menu in menu.menus" ng-include="'treeLeft'">
+            </li>
+        </ul>
+    </script>
+
+    <div id="parent_div_tree">
+        <div id="div_left_tree">
+            <ul class='fa-ul'>
+                <li ng-repeat="menu in menus" ng-include="'treeLeft'">
+                </li>
+            </ul>
+            <button ng-click="test001()">test ...</button>
+            <button style="display: ;" type="button" id="btnShowTree" class="" data-toggle="modal"
+                    data-target="#myModalTree">
+                Modal tree
+            </button>
+            <button style="display: ;" type="button" id="btnShowEdit" class="" data-toggle="modal"
+                    data-target="#myModalEdit">
+                Modal edit
+            </button>
+
+        </div>
+        <div id="div_right_tree">
+            <div class="clDrop" id="iright-{{loadingRight ? loadingRight.id : 'folder_0'}}"
+                 ondrop="ClassTree.dropNow(event)" ondragover="ClassTree.hoverToDrop(event)"
+                 ondragleave="ClassTree.leaveDrag(event)">
+                <!--            {{loadingRight ? '' + loadingRight.name : 'Root/'}}-->
+
+                <span ng-repeat="elm in arrCurPath">
+            <span ng-click="loadItemsRight(elm)"> <i class="fa fa-caret-right"
+                                                     aria-hidden="true"></i> {{elm.name}} </span>
+            </span>
+
+                <br>
+                <div ng-repeat="menu in rightMenus">
+                    <input id="checkBox-{{menu.id}}" style="float: left; margin: 10px 3px 10px 10px " type="checkbox"
+                           ng-show="menu.id != 'folder_0'">
+                    <button id="showMenu-iright-{{menu.id}}" style="float: right"
+                            onclick="ClassTree.showMenuClick(event,'right')">[:]
+                    </button>
+                    <div class="clDrop" id="iright-{{menu.id}}" draggable="true"
+                         ondragstart="ClassTree.dragStart(event)"
+                         ondrop="ClassTree.dropNow(event)" ondragover="ClassTree.hoverToDrop(event)"
+                         ng-dblclick="loadItemsRight(menu)">
+                        <i ng-show="!menu.type" style="color: gray;" class="fa fa-folder" aria-hidden="true"></i>
+                        <i style="color: gray;" ng-show="menu.type" class="fa fa-file-o" aria-hidden="true"></i>
+                        {{menu.name}} /id={{menu.id}}
+                    </div>
+                </div>
+
+                {{rightMenus.length ? '' : '(empty folder)'}}
+
+            </div>
+            <button onclick="ClassTree.checkAllRight()">CheckAll</button>
+            <br>
+        </div>
+    </div>
+    <!--<script type="text/javascript" src="//code.jquery.com/jquery-1.9.1.js"></script>-->
+
+    <!-- Modal Popup-->
+    <div class="modal" id="myModalTree" tabindex="-1" role="dialog" aria-labelledby="myModalTreeLabel">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                                aria-hidden="true">&times;</span>
+                    </button>
+                    <h4 class="modal-title" id="myModalTreeLabel">Chuyển tới folder</h4>
+                </div>
+                <div class="modal-body">
+                    <ul class='fa-ul'>
+                        <li ng-repeat="menu in menus" ng-include="'treeModal'">
+                        </li>
+                    </ul>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary"
+                            onclick="ClassTree.moveItemApi(ClassTree.strMovingArrId, strMovingDestId)">Move Here
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Edit-->
+    <div class="modal" id="myModalEdit" tabindex="-1" role="dialog" aria-labelledby="myModalTreeLabel">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                                aria-hidden="true">&times;</span>
+                    </button>
+                    <h4 class="modal-title" id="myModalTreeLabel">Nhập tên</h4>
+                </div>
+                <div class="modal-body">
+
+                    <input type="text" ng-show="editingItem" id="editing-{{editingItem.id}}"
+                           ng-model="editingItem.name">
+
+                    <input type="text" ng-show="!editingItem" id="new-item-add">
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Hủy</button>
+                    <button type="button" ng-show="editingItem" class="btn btn-primary"
+                            onclick="ClassTree.saveItemApi()">Lưu
+                    </button>
+                    <button type="button" ng-show="!editingItem" class="btn btn-primary"
+                            onclick="ClassTree.createItemApi()">Tạo mới
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!--<script src="//code.jquery.com/jquery-3.2.1.min.js"></script>-->
+<!--<script src="/public/vendor/bootstrap.js"></script>-->
+<!--<script src="/public/vendor/angular-1.5.min.js"></script>-->
+<!--<script src="/public/vendor/angular-animate.min.js"></script>-->
+<!--<script src="/public/vendor/angular-aria.min.js"></script>-->
+<!--<script src="/public/vendor/angular-messages.min.js"></script>-->
+<!--<script src="/public/vendor/angular-material.min.js"></script>-->
+<!--<script src="//code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>-->
+
+<!--<script src="//cdn.jsdelivr.net/gh/mar10/jquery-ui-contextmenu@v1/jquery.ui-contextmenu.min.js"></script>-->
+
+<script src="https://swisnl.github.io/jQuery-contextMenu/dist/jquery.contextMenu.js"></script>
+<script src="http://galaxycloud.vn/public/toastr/toastr.min.js"></script>
+
+
+<!--<script  src="1.js"></script>-->
+<script>
+    ClassTree = function (){
+    }
+
+    ClassTree.getIdFromStrId = function (strId) {
+        if (!strId) {
+            alert(" Error: not str id? ");
+            console.trace();
+            return;
+        }
+
+        var split1 = strId.split("_");
+        return split1[1];
+    }
+
+    ClassTree.getItemInTree = function (id) {
+        var scope = angular.element($("#main_id_div_tree")).scope();
+        return ClassTree.getItemInTree(scope.menus[0], 0, id);
+    }
+
+
+    //Return element by id, to work on it
+    ClassTree.getItemInTree = function (current, depth, id) {
+        if (depth > 100) {
+            alert("Error deep tree > 100!");
+            return;
+        }
+        id = id.replace("ileft-", "").replace("iright-", "");
+        //console.log("ClassTree.getIdFromStrId(id) = " + ClassTree.getIdFromStrId(id));
+        //console.log(" getItemInTree = " + JSON.stringify(current));
+        if (ClassTree.getIdFromStrId(id) == 0) {
+            return current;
+        }
+
+        //console.log(" getItemInTree = " + JSON.stringify(current));
+        var ret = 0;
+        if (!current.menus)
+            return 0;
+        for (var i = 0, len = current.menus.length; i < len; i++) {
+            if (current.menus[i].id == id) {
+                return current.menus[i];
+            }
+            ret = ClassTree.getItemInTree(current.menus[i], depth + 1, id);
+            if (ret)
+                return ret;
+        }
+        return ret;
+    }
+
+    ClassTree.getIdFromStrId = function (strId) {
+        if (!strId) {
+            alert(" Error: not str id? ");
+            console.trace();
+            return;
+        }
+        var split1 = strId.split("_");
+        return split1[1];
+    }
+
+    ClassTree.getItemInTree = function (id) {
+        var scope = angular.element($("#main_id_div_tree")).scope();
+        return ClassTree.getItemInTree(scope.menus[0], 0, id);
+    }
+
+    //Return element by id, to work on it
+    function getItemInTree_del(current, depth, id) {
+        if (depth > 100) {
+            alert("Error deep tree > 100!");
+            return;
+        }
+        id = id.replace("ileft-", "").replace("iright-", "");
+        //console.log("ClassTree.getIdFromStrId(id) = " + ClassTree.getIdFromStrId(id));
+        //console.log(" getItemInTree = " + JSON.stringify(current));
+        if (ClassTree.getIdFromStrId(id) == 0) {
+            return current;
+        }
+
+        //console.log(" getItemInTree = " + JSON.stringify(current));
+        var ret = 0;
+        if (!current.menus)
+            return 0;
+        for (var i = 0, len = current.menus.length; i < len; i++) {
+            if (current.menus[i].id == id) {
+                return current.menus[i];
+            }
+            ret = ClassTree.getItemInTree(current.menus[i], depth + 1, id);
+            if (ret)
+                return ret;
+        }
+        return ret;
+    }
+
+    //Return element by id, to work on it
+    ClassTree.setFieldItemAllTree = function (current, depth, field, value) {
+        if (depth > 100) {
+            alert("Error deep tree > 100!");
+            return;
+        }
+        if (!current.menus)
+            return;
+        for (var i = 0, len = current.menus.length; i < len; i++) {
+            current.menus[i][field] = value;
+            ClassTree.setFieldItemAllTree(current.menus[i], depth + 1, field, value);
+        }
+    }
+
+    //VD: set item = null, nếu type=1
+    ClassTree.setItemWithCondition = function (current, depth, valueToSet, field, fieldCondition) {
+        if (depth > 100) {
+            alert("Error deep tree > 100!");
+            return;
+        }
+        if (!current.menus)
+            return;
+        for (var i = 0, len = current.menus.length; i < len; i++) {
+            if (current.menus[i][field] == fieldCondition)
+                current.menus[i] = valueToSet;
+
+            ClassTree.setItemWithCondition(current.menus[i], depth + 1, valueToSet, field, fieldCondition);
+        }
+    }
+
+    ClassTree.removeAllFileInLeft = function (current, depth) {
+        if (depth > 100) {
+            alert("Error deep tree > 100!");
+            return;
+        }
+        if (!current.menus)
+            return;
+        for (var i = current.menus.length - 1; i >= 0; i--) {
+            if (current.menus[i].type == 1) {
+                current.menus.splice(i, 1);
+            }
+            else
+                ClassTree.removeAllFileInLeft(current.menus[i], depth + 1);
+        }
+    }
+
+    //Return element by id, to work on it
+    ClassTree.getItemInRight = function (id) {
+        id = id.replace("ileft-", "").replace("iright-", "");
+
+        var scope = angular.element($("#main_id_div_tree")).scope();
+        if (!scope.rightMenus) {
+            return null;
+        }
+        console.log(" scope.rightMenus = " + JSON.stringify(scope.rightMenus));
+        if (scope.rightMenus && scope.rightMenus.length > 0)
+            for (var i = 0, len = scope.rightMenus.length; i < len; i++) {
+                if (scope.rightMenus[i].id == id) {
+                    return scope.rightMenus[i];
+                }
+            }
+        return null;
+    }
+
+    ClassTree.checkNodeIsOpen = function (current, depth, id) {
+        if (depth > 100) {
+            alert("Error deep tree > 100!");
+            return;
+        }
+        //console.log(" checkNodeIsOpen = " +  JSON.stringify(current));
+        var hasSubMenu = 0;
+        if (!current.menus)
+            return 0;
+        var children = current.menus;
+        for (var i = 0, len = children.length; i < len; i++) {
+            if (children[i].id == id) {
+                if (children[i].menus)
+                    if (children[i].menus.length > 0) {
+                        //alert(" hasSubMenu = 1 ");
+                        hasSubMenu = 1;
+                    }
+                //alert(" children[i].menus = " + value );
+                //children[i].menus = value;
+                return hasSubMenu;
+            }
+            hasSubMenu = ClassTree.checkNodeIsOpen(children[i], depth + 1, id);
+            if (hasSubMenu)
+                return hasSubMenu;
+        }
+        return hasSubMenu;
+    }
+
+    ClassTree.deleteItemInRight = function (rightArr, arrId) {
+        //id = id.replace(/\./g, "");
+        //id = id.replace('iright', "");
+        //id = id.replace('ileft', "");
+        if (arrId.length > 0) {
+            for (var k in arrId) {
+                arrId[k] = arrId[k].replace('iright-', "");
+                arrId[k] = arrId[k].replace('ileft-', "");
+                for (var i = 0, len = rightArr.length; i < len; i++) {
+                    //console.log(" rightArr I = " + JSON.stringify(rightArr[i]));
+                    //if (arrId.indexOf(rightArr[i].id) >= 0) {
+                    if ((rightArr[i].id) == arrId[k]) {
+                        rightArr.splice(i, 1);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    ClassTree.deleteItemInLeft = function (arrId) {
+
+        var scope = angular.element($("#main_id_div_tree")).scope();
+
+        var id = null;
+        if (arrId.length > 0) {
+            for (var k in arrId) {
+
+                console.log(" arrId[k] = " + arrId[k]);
+
+                arrId[k] = arrId[k].replace('iright-', "");
+                id = arrId[k] = arrId[k].replace('ileft-', "");
+
+                var elm = ClassTree.getItemInTree(scope.menus[0], 0, id);
+                if (!elm) {
+                    break;
+                }
+
+                var elmParent = ClassTree.getItemInTree(scope.menus[0], 0, elm.parent);
+                console.log(" elm.parent = " + elm.parent);
+                if (elmParent.menus && elmParent.menus.length > 0)
+                    for (var x in elmParent.menus) {
+                        if (elmParent.menus[x].id == id) {
+                            elmParent.menus.splice(x, 1);
+                            break;
+                        }
+                    }
+                console.log(" elmx = " + JSON.stringify(elm));
+            }
+        }
+        //elm = null;
+    }
+</script>
+
+
+<script type="text/javascript" class="showcase">
+    $(function () {
+        $.contextMenu({
+            //selector: '.context-menu-one',
+            selector: '[id^="ileft-"],[id^="iright-"]',
+            callback: function (key, options) {
+                var arrCheck = [];
+                $("[id^='checkBox-']").each(function () {
+                    //console.log(" ids check = ", this.id, " / ", this.checked);
+                    if (this.checked)
+                        arrCheck.push(this.id);
+                });
+
+                var idStr = $(this).prop('id');
+                var idOrg = $(this).prop('id').replace("ileft-", "").replace("iright-", "");
+                var idStrCheckBox = idStr.replace("ileft-", "checkBox-").replace("iright-", "checkBox-");
+
+                var countDel = 1;
+                var strArrId = idStrCheckBox;
+                if (arrCheck.length > 0 && arrCheck.indexOf(idStrCheckBox) >= 0) {
+                    strArrId = arrCheck.join();
+                    countDel = arrCheck.length;
+                }
+
+                strArrId = strArrId.replace(/checkBox-/g, "");
+                console.log(" strArrId = " + strArrId);
+
+                var scope = angular.element($("#main_id_div_tree")).scope();
+
+                if (key == 'delete') {
+                    if (confirm("Bạn sẽ xóa: " + countDel + " files ? (" + strArrId + ")")) {
+//                            alert("Delete now , id = " + idNum);
+                        var arrDel = strArrId.split(",");
+                        scope.$apply(function () {
+                            ClassTree.deleteItemInLeft(arrDel);
+                            ClassTree.deleteItemInRight(scope.rightMenus, arrDel);
+                        })
+                    }
+                }
+                else if (key == 'move') {
+                    console.log("Move: " + strArrId);
+                    ClassTree.strMovingArrId = strArrId;
+                    //$("#btnShowTree").click();
+                    $('#myModalTree').modal('toggle');
+                }
+                else if (key == 'create') {
+
+                    scope.$apply(function () {
+                        scope.editingItem = null;
+                        scope.createInItem = idStr;
+                    })
+
+                    $("#new-item-add").val("");
+                    $('#myModalEdit').modal('toggle');
+
+                    setTimeout(function () {
+                        $("#new-item-add").focus();
+                    }, 500);
+                    return;
+                }
+                else if (key == 'edit') {
+
+                    if (idOrg == 'folder_0') {
+                        return;
+                    }
+
+                    scope.$apply(function () {
+                        scope.editingItem = ClassTree.getItemInTree(scope.menus[0], 0, idOrg);
+                        if (!scope.editingItem)
+                            scope.editingItem = ClassTree.getItemInRight(idOrg);
+                    })
+
+                    scope.editingOldValue = scope.editingItem.name;
+
+                    //$("#btnShowEdit").click();
+                    $('#myModalEdit').modal('toggle');
+
+                    setTimeout(function () {
+                        $("#editing-" + scope.editingItem.id).focus();
+                    }, 500);
+
+                    console.log("Edit: " + idStr + "/ " + JSON.stringify(scope.editingItem));
+                }
+                else {
+                    alert("CMD = " + key);
+                }
+            },
+            items: {
+                "edit": {name: "Rename", icon: "edit"},
+                "create": {name: "New folder", icon: "edit"},
+                "move": {name: "Move", icon: "paste"},
+                "delete": {name: "Delete", icon: "delete"},
+                "quit": {
+                    name: "Quit", icon: function () {
+                        return 'context-menu-icon context-menu-icon-quit';
+                    }
+                }
+            }
+        });
+
+        $('.context-menu-one').on('click', function (e) {
+            console.log('clicked...', this);
+        })
+    });
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ClassTree.createItemApi = function () {
+
+        var newName = $("#new-item-add").val();
+
+        if (newName.length <= 0) {
+            alert("Nhập tên folder!");
+            return;
+        }
+        $("#new-item-add").val("");
+
+        var scope = angular.element($("#main_id_div_tree")).scope();
+        var idStr = scope.createInItem;
+        console.log("create ... : " + idStr);
+        var pid = null;
+
+        if (idStr.indexOf('ileft-') >= 0) {
+            var elm = ClassTree.getItemInTree(idStr);
+            //Nếu là left thì tạo folder trong thư mục này
+            pid = elm.id;
+        }
+        else if (idStr.indexOf('iright-') >= 0) {
+            var elm = ClassTree.getItemInRight(idStr);
+            //Nếu là right thì tạo folder trong thư mục cha
+            if (!elm)
+                pid = idStr;
+            else
+                pid = elm.parent;
+        }
+        else {
+            alert("Error: not valid id click? (right, left?)");
+            return;
+        }
+
+        pid = pid.replace("ileft-", "").replace("iright-", "");
+
+        var elmLeft = ClassTree.getItemInTree(pid);
+        var elmRight = ClassTree.getItemInTree(pid);
+        //var elmRight = scope.rightMenus[0];
+
+        console.log(" elmLeft = " + JSON.stringify(elmLeft));
+        console.log(" elmRight = " + JSON.stringify(elmRight));
+
+        var urlApi = "/a_p_i/demo-tree/add-item-tree?id=" + pid + "&name=" + newName + "&_ts=" + Date.now();
+        console.log("urlApi =  " + urlApi);
+        $("#waitting_icon").show();
+        $.get(urlApi, function (data, status) {
+            $("#waitting_icon").hide();
+            //console.log(" --- Data: " + data + "\nStatus: " + status);
+            if (isNaN(data)) {
+                alert("Not success: " + data);
+                return false;
+            }
+
+            $('#myModalEdit').modal('toggle');
+
+            //            alert("Move thành công!");
+            showToastInfoBottom("Tạo mới thành công!");
+
+            var newElm = {id: "folder_" + data, name: newName, parent: pid, type: 0};
+
+            console.log(" newElm = " + JSON.stringify(newElm));
+
+            scope.$apply(function () {
+
+                if (idStr.indexOf('ileft-') >= 0) {
+
+                    if (elmLeft.menus && elmLeft.menus.length > 0)
+                        elmLeft.menus.push(newElm);
+                    else
+                        elmLeft.menus = [newElm];
+                }
+                else if (idStr.indexOf('iright-') >= 0) {
+                    if (elmRight.menus && elmRight.menus.length > 0)
+                        elmRight.menus.push(newElm);
+                    else
+                        elmRight.menus = [newElm];
+                }
+
+                if (pid == scope.loadingRight.id)
+                    scope.rightMenus = ClassTree.getItemInTree(pid).menus;
+
+            });
+            console.log(" elmLeft = " + JSON.stringify(elmLeft));
+            console.log(" elmRight = " + JSON.stringify(elmRight));
+            return true;
+        });
+    }
+
+    ClassTree.saveItemApi = function () {
+        var scope = angular.element($("#main_id_div_tree")).scope();
+        console.log(" editingItem = " + scope.editingItem.name);
+        //ClassTree.strMovingArrId
+        var urlApi = "/a_p_i/demo-tree/save-item-tree?item_id=" + scope.editingItem.id + '&value=' + scope.editingItem.name + "&_ts=" + Date.now();
+        console.log("urlApi =  " + urlApi);
+        var urlApi1 = "";
+        $("#waitting_icon").show();
+        $.get(urlApi, function (data, status) {
+            $("#waitting_icon").hide();
+            //console.log(" --- Data: " + data + "\nStatus: " + status);
+            var elmRight = ClassTree.getItemInRight(scope.editingItem.id);
+            if (data != "OK") {
+                alert("Not success: " + data);
+                if (elmRight)
+                    scope.$apply(function () {
+                        elmRight.name = scope.editingOldValue;
+                    });
+                scope.editingItem.name = scope.editingOldValue;
+                return;
+            }
+//            alert("Move thành công!");
+            showToastInfoBottom("Thay đổi thành công!");
+            if (elmRight)
+                scope.$apply(function () {
+                    elmRight.name = scope.editingItem.name;
+                });
+            $('#myModalEdit').modal('toggle');
+        });
+    }
+
+    ClassTree.moveItemUI = function (idStrDrag0, idStrDrop0) {
+
+        var scope = angular.element($("#main_id_div_tree")).scope();
+        var idStrDrop = idStrDrop0.replace('iright-', "").replace('ileft-', "");
+        var idStrDrag = idStrDrag0.replace('iright-', "").replace('ileft-', "");
+
+        var elmDropLeft = ClassTree.getItemInTree(scope.menus[0], 0, idStrDrop);
+
+        var elmDragFromSplice = null;
+        //if(idStrDrag0.indexOf("iright-") >=0)
+        for (var k in scope.rightMenus) {
+            if (scope.rightMenus[k].id == idStrDrag) {
+                //scope.rightMenus[k] = null;
+                elmDragFromSplice = (scope.rightMenus.splice(k, 1))[0];
+                break;
+            }
+        }
+
+        if (!elmDragFromSplice)
+            elmDragFromSplice = ClassTree.getItemInTree(scope.menus[0], 0, idStrDrag);
+
+        if (!elmDragFromSplice) {
+            //alert("Error: Not elmDragFromSplice1,2 ?");
+            return;
+        }
+
+        // return;
+        //Remove drag in Parent:
+        var parentOfDrag = ClassTree.getItemInTree(scope.menus[0], 0, elmDragFromSplice.parent);
+        if (parentOfDrag && parentOfDrag.menus && parentOfDrag.menus.length > 0) {
+            for (var k in parentOfDrag.menus) {
+                if (parentOfDrag.menus[k].id == idStrDrag) {
+                    parentOfDrag.menus.splice(k, 1);
+                    break;
+                }
+            }
+        }
+
+        elmDragFromSplice.id = elmDragFromSplice.id.replace('right', 'left');
+        elmDragFromSplice.parent = elmDropLeft.id;
+        if (elmDropLeft.menus && elmDropLeft.menus.length > 0) {
+            console.log(" xxx1");
+            scope.$apply(function () {
+                elmDropLeft.menus.push(elmDragFromSplice); //elmDrag
+            });
+        }
+        else {
+            scope.$apply(function () {
+                elmDropLeft.menus = [elmDragFromSplice];
+            });
+        }
+
+    }
+
+    ClassTree.moveItemApi = function (str_MovingArrId1, strMovingDestId1) {
+
+        var strMove = '&move_items=' + str_MovingArrId1;
+        strMove += "&move_to=" + strMovingDestId1;
+        var urlApi = "/a_p_i/demo-tree/move-item-tree?" + strMove + "&_ts=" + Date.now();
+        console.log("urlApi =  " + urlApi);
+
+        $("#waitting_icon").show();
+        $.get(urlApi, function (data, status) {
+            $("#waitting_icon").hide();
+            //console.log(" --- Data: " + data + "\nStatus: " + status);
+            if (data != "OK") {
+                alert("Not success: " + data);
+                return;
+            }
+            showToastInfoBottom("Move done!");
+            $('#myModalTree').modal('hide');
+
+            var scope = angular.element($("#main_id_div_tree")).scope();
+            scope.toggleNodeLeft("" + strMovingDestId1, 1);
+
+            var arrId = str_MovingArrId1.split(",");
+            for (var k in arrId) {
+                //moveItem("iright-"+ arrId[k], strMovingDestId)
+                ClassTree.moveItemUI(arrId[k], strMovingDestId1);
+            }
+            if (strMovingDestId1 == scope.loadingRight.id) {
+                console.log(" to right? str = " + strMovingDestId1);
+                var rightIt = ClassTree.getItemInTree(scope.menus[0], 0, strMovingDestId1);
+                console.log(" right = " + JSON.stringify(rightIt));
+                scope.loadItemsRight(rightIt);
+            }
+        });
+    }
+
+    ClassTree.showMenuClick = function (event) {
+        //alert("ClassTree.showMenuClick " + event.target.id);
+        var idStr = event.target.id;
+        idStr = idStr.replace("showMenu-", "");
+        console.log(" idStr = " + idStr);
+        $("#" + idStr).contextMenu();
+        //$('.context-menu-one-' + idStr).contextMenu();
+    }
+
+    ClassTree.choiceFolderToMove = function (event) {
+        var idStr = event.target.id;
+        idStr = idStr.replace("folderToMove-", "");
+        strMovingDestId = idStr;
+
+    }
+
+    ClassTree.checkAllRight = function () {
+
+        var unCheckAll = false;
+        $("[id^='checkBox-']").each(function () {
+            if ($(this).prop("checked") == true) {
+                $("[id^='checkBox-']").prop("checked", false);
+                unCheckAll = true;
+                return;
+            }
+        });
+        if (!unCheckAll)
+            $("[id^='checkBox-']").prop("checked", true);
+    }
+
+    ClassTree.checkAllRightFolder = function () {
+
+        var unCheckAll = false;
+        $("[id^='checkBox-folder_']").each(function () {
+            if ($(this).prop("checked") == true) {
+                $("[id^='checkBox-folder_']").prop("checked", false);
+                unCheckAll = true;
+                return;
+            }
+        });
+        if (!unCheckAll)
+            $("[id^='checkBox-folder_']").prop("checked", true);
+    }
+
+    ClassTree.checkAllRightFile = function () {
+
+        var unCheckAll = false;
+        $("[id^='checkBox-file_']").each(function () {
+            if ($(this).prop("checked") == true) {
+                $("[id^='checkBox-file_']").prop("checked", false);
+                unCheckAll = true;
+                return;
+            }
+        });
+        if (!unCheckAll)
+            $("[id^='checkBox-file_']").prop("checked", true);
+    }
+
+
+    function showToastInfoBottom(mess, title, timeout) {
+        toastr.options.closeButton = true;
+        toastr.options.positionClass = "toast-bottom-right";
+        if (timeout)
+            toastr.info(mess, title, {timeOut: timeout});
+        else
+            toastr.info(mess, title, {timeOut: 2000});
+    }
+
+    $("[id^='editing-']").keyup(function (event) {
+        if (event.keyCode === 13) {
+            ClassTree.saveItemApi();
+        }
+    });
+
+    $("[id^='new-item-add']").keyup(function (event) {
+        if (event.keyCode === 13) {
+            ClassTree.createItemApi();
+        }
+    });
+
+</script>
+
+
+<script type='text/javascript'>
+
+    $(window).load(function () {
+
+        var lastWidth1 = 0;
+
+        $("#div_left_tree").resizable({handles: 'e, w'});
+        $('#div_left_tree').resize(function () {
+            $('#div_right_tree').width($("#parent_div_tree").width() - $("#div_left_tree").width() - 20);
+            $('#div_left_tree').css('height', 'auto');
+        });
+
+        $(window).resize(function () {
+
+            //console.log(" window.resize(function " + Date.now());
+
+            $('#div_right_tree').width($("#parent_div_tree").width() - $("#div_left_tree").width() - 20);
+            $('#div_left_tree').height($("#parent_div_tree").height());
+
+            //return;
+
+            checkSizeWidth();
+
+        });
+
+        $("#div_left_tree").width($("#parent_div_tree").width() * 0.3);
+        $('#div_right_tree').width($("#parent_div_tree").width() * 0.7 - 20);
+
+        checkSizeWidth();
+
+        function checkSizeWidth() {
+            var docW = document.documentElement.clientWidth;
+            console.log("docW = " + docW);
+            if (docW < 800) {
+                lastWidth1 = $("#div_left_tree").width();
+                console.log("docW <800");
+                $("#div_left_tree").hide();
+                $("#div_right_tree").css("width", "100%");
+            }
+            else {
+                //$("#div_left_tree").css("width", "30%");
+                if (lastWidth1) {
+                    $("#div_left_tree").show();
+                    $("#div_right_tree").css("width", docW - lastWidth1 - 20);
+                    lastWidth1 = 0;
+                }
+            }
+
+            $('#div_left_tree').css('height', 'auto');
+        }
+
+    });
+
+
+    //    $(window).load(function () {
+    //        $("#div1").resizable();
+    //        $('#div1').resize(function () {
+    //            $('#div2').width($("#parentdiv").width() - $("#div1").width());
+    //        });
+    //        $(window).resize(function () {
+    //            $('#div2').width($("#parentdiv").width() - $("#div1").width());
+    //            $('#div1').height($("#parentdiv").height());
+    //        });
+    //    });
+</script>
+
+<script>
+
+    var counterToCheckDragLeave = 0;
+    var arrDrag = [];
+
+    ClassTree.hoverToDrop = function(ev) {
+        if(ev.target.id.indexOf("iright-") >=0 || ev.target.id.indexOf("ileft-") >=0)
+            $(ev.target).css('background-color','#ccc');
+        ev.preventDefault();
+    }
+
+    ClassTree.leaveDrag = function(ev) {
+        if(ev.target.id.indexOf("iright-") >=0 || ev.target.id.indexOf("ileft-") >=0)
+            $(ev.target).removeAttr('style');
+    }
+
+    ClassTree.dragStart = function(ev) {
+
+        ev.dataTransfer.setData("text", ev.target.id);
+
+        var idStrDraging = ClassTree.getIdFromStrId(ev.target.id);
+        console.log(" drag start, idStrDraging = " + idStrDraging);
+
+        if (arrDrag.length > 0) {
+            var img1 = new Image();
+            img1.src = "http://galaxycloud.vn/public/images/multifile.png?ts=1";
+            ev.dataTransfer.setDragImage(img1, 0, 0);
+
+            //Neu item drag khong thuoc list check, thi chi move no:
+            if(arrDrag.indexOf(idStrDraging) <0){
+                $("[id^='checkDrag_']").prop("checked", false);
+                arrDrag = []
+            }
+            else {
+                for (var k in arrDrag) {
+                    if (arrDrag[k] != idStrDraging) {
+                        //$("#drag_" + arrDrag[k]).hide();
+                    }
+                }
+                //$("#countNumberDrag_" + idStrDraging).show();
+                //$("#countNumberDrag_" + idStrDraging).html(arrDrag.length);
+            }
+        }
+    }
+
+
+    ClassTree.dropNow = function(ev){
+
+        counterToCheckDragLeave = 0;
+        ev.preventDefault();
+        event.stopPropagation();
+
+        if(ev.target.id.indexOf("iright-") >=0 || ev.target.id.indexOf("ileft-") >=0)
+            $(ev.target).removeAttr('style');
+
+        var data = ev.dataTransfer.getData("text");
+        console.log("id drag = " + data);
+        console.log("drop to = " + ev.target.id);
+
+        // if(!ev.target.id){
+        //     return;
+        // }
+
+        if(data == ev.target.id){
+            //alert("Can  not move it self");
+            return;
+        }
+
+        if(ev.target.id.indexOf("file_") >=0 ){
+            return;
+        }
+
+        // console.log("scope.menus x1 = " + JSON.stringify(scope.menus));
+        var arrCheck = [];
+        $("[id^='checkBox-']").each(function () {
+            //console.log(" ids check = ", this.id, " / ", this.checked);
+            if (this.checked)
+                arrCheck.push(this.id);
+        });
+
+        var idStrDrag = data;
+        var idStrDrop = ev.target.id;
+        idStrDrop = idStrDrop.replace('iright-' , "");
+        idStrDrop = idStrDrop.replace('ileft-' , "");
+
+        var idStrCheckBox = idStrDrag.replace("ileft-", "checkBox-").replace("iright-", "checkBox-");
+        //idStrCheckBox = idStrCheckBox.replace("iright-", "checkBox-");
+        var strArrId = idStrCheckBox;
+        //Nếu Item drag không được check, thì chỉ move item đó, ko move các item checked
+        if (arrCheck.length > 0 && arrCheck.indexOf(idStrCheckBox) >= 0)
+            strArrId = arrCheck.join();
+        strArrId = strArrId.replace(/checkBox-/g, "");
+        console.log(" strArrId = " + strArrId);
+
+        ClassTree.moveItemApi(strArrId, idStrDrop);
+    }
+
+
+    //2 hàm dùng để check drag cancel vào các vùng ko dropable
+    $(document).on('dragenter', function () {
+        if (counterToCheckDragLeave === 0) {
+            console.log('start drag?');
+        }
+        if(arrDrag.length > 0)
+            counterToCheckDragLeave+=arrDrag.length;
+        else
+            counterToCheckDragLeave++;
+    });
+    $(document).on('dragleave', function () {
+        if(arrDrag.length > 0)
+            counterToCheckDragLeave-=arrDrag.length;
+        else
+            counterToCheckDragLeave--;
+        if (counterToCheckDragLeave === 0) {
+            console.log('left stop drag');
+            $("[id^='drag_']").show();
+        }
+    });
+
+
+
+</script>
+

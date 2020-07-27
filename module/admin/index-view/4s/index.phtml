@@ -1,0 +1,447 @@
+<!-- Content Header (Page header) -->
+<style>
+    .info1{
+        width: 100%; height: 200px;
+    }
+    hr{
+        margin: 2px!important;
+    }
+</style>
+<section class="content-header">
+    <h1>
+        <?php
+        echo nowyh();
+        ?>
+        <small>
+
+        </small>
+    </h1>
+    <ol class="breadcrumb">
+        <li><a href="#"><i class="fa fa-dashboard"></i> Home</a></li>
+        <li class="active">Dashboard</li>
+    </ol>
+</section>
+
+<!-- Main content -->
+<section class="content">
+
+
+    <div class="box box-primary">
+        <a target="_blank" href="/tool/4s/phanTichFile/uploaderXoaFile.lib"> DELETE UPLOADER FILE </a>
+         |
+        <a target="_blank" href="/tool/bill-sum.php?tomail=1&nday=5"> --- Bill --- </a>
+        <br>
+    <div>
+
+        <div class="box box-primary">
+            Speed Test
+            <?php
+            $logFile = "/var/glx/weblog/test_speed_fs_daily.log";
+            $lastIndexInfo = CFile::getNByteLast($logFile , 2000);
+            $lastIndexInfo = trim($lastIndexInfo);
+            echo "<textarea class='info1' style='height: 50px'>$lastIndexInfo</textarea>";
+            ?>
+        </div>
+
+        <div class="box box-primary">
+            <div class="box-header with-border">
+                <h3 class="box-title">FSDL: </h3>
+            </div><!-- /.box-header -->
+            <?php
+
+            //$o4s = new ClassLog4S();
+
+            $svIp = ['sv1.4share.vn',
+                'sv5.4share.vn',
+                'sv9.4share.vn',
+                'sv15.4share.vn',
+                'sv66.4share.vn',
+                'sv81.4share.vn',
+                'sv129.4share.vn',
+                ];
+
+            $svIp1 = [];
+            foreach ($svIp AS $name){
+                $svIp1[gethostbyname($name)] = $name;
+            }
+
+            $log4s = new ClassLog4S();
+            $ttCacheSize = 0;
+            $m1 = $log4s->getArrWhere(['userfile'=>1573860, 'ip_4s_local'=>'16.0.0.3']);
+            $ttCC = count($m1);
+            $todayCacheDl = $nTd= 0;
+            foreach ($m1 AS $log4s){
+                $cfile = new \Base\ModelCloudFile($log4s->fid);
+                $ttCacheSize+=$cfile->size;
+
+                if($log4s->time > nowy()){
+                    $nTd++;
+                    $todayCacheDl+=$cfile->size;;
+                }
+            }
+
+            $folderCache = "/var/ufile/cache_fs/";
+            $fodSize = CFile::getFolderSize($folderCache);
+
+            echo "- Total CacheDL = $ttCC / ".ByteSize($ttCacheSize). " , FolderCacheSize: ".ByteSize($fodSize) . " / NFile = ".CFile::getCountFileInFolder($folderCache) . " /  FreeCache= ". ByteSize($freeD = CDisk::getFreeDiskInFilePath("/var/ufile"));
+            echo " , TodayCacheDl ($nTd) = ".ByteSize($todayCacheDl);
+
+            if($freeD < 100 * _GB){
+                echo "\n <br> <span style='color: red'> --- FreeCache < 100G? --- </span>";
+            }
+
+            echo "<br/>\n ";
+
+            /////////////////////////////////
+            $db = "log_4share";
+            $tbl = "log_download";
+            $clt = (new MongoDB\Client)->$db->$tbl;
+            //$cursor = $clt->find(['locationFShare'=>1]);
+            $cursor = $clt->find(['timeUnix'=>['$gt'=> time() - 10 * _NSECOND_DAY ]]);
+            $totalSize = $sizeToday = 0;
+            //$count = $clt->count(['locationFShare'=>1]);
+            $count = $clt->count(['timeUnix'=>['$gt'=> time() - 10 * _NSECOND_DAY ]]);
+            $cc = $cc1 = 0;
+            $lastStr = '';
+            $mIpTotalByte = [];
+            $mCountFile = [];
+
+            $topFileAllTime = [];
+            $topFile7Day = [];
+            $topFileToday = [];
+
+            $topUserTodayCount = [];
+            $topUserTodaySize = [];
+            $topUser7dayCount = [];
+            $topUser7daySize = [];
+            $lastToday  = [];
+
+            $userListToday = [];
+
+            foreach ($cursor as $document) {
+                $cc++;
+                $obj = new ClassLog4S();
+                foreach ($document as $key => $value) {
+                    $obj->$key = $value;
+                }
+
+                if($obj->userdownload){
+
+                    if(!isset($topUserTodayCount[$obj->userdownload]))
+                        $topUserTodayCount[$obj->userdownload] = 0;
+                    if(!isset($topUserTodaySize[$obj->userdownload]))
+                        $topUserTodaySize[$obj->userdownload] = 0;
+
+                    if($obj->time > nowy()){
+                        if(!isset($userListToday[$obj->userdownload])){
+                            $userListToday[$obj->userdownload] = 0;
+                        }
+                        $userListToday[$obj->userdownload]++;
+
+                        $topUserTodaySize[$obj->userdownload] += $obj->size;
+                        $topUserTodayCount[$obj->userdownload]++;
+                    }
+
+                    if(!isset($topUser7dayCount[$obj->userdownload]))
+                        $topUser7dayCount[$obj->userdownload] = 0;
+                    if(!isset($topUser7daySize[$obj->userdownload]))
+                        $topUser7daySize[$obj->userdownload] = 0;
+                    if($obj->time > nowy(time() - 7*_NSECOND_DAY)){
+                        $topUser7daySize[$obj->userdownload] += $obj->size;
+                        $topUser7dayCount[$obj->userdownload]++;
+                    }
+
+                }
+
+                if(!$obj->locationFShare)
+                    continue;
+
+                if(!isset($mIpTotalByte[$obj->ip_4s_local])) {
+                    if(strstr($obj->ip_4s_local, '203.113.132.')) {
+                        $mIpTotalByte[$obj->ip_4s_local] = 0;
+                        $mCountFile[$obj->ip_4s_local] = 0;
+                        $lastToday[$obj->ip_4s_local] = 0;
+                    }
+                }
+
+                if(!isset($topFileAllTime[$obj->fid]))
+                    $topFileAllTime[$obj->fid] = 0;
+
+                $topFileAllTime[$obj->fid]++;
+
+                $totalSize+=$obj->size;
+                if($obj->time > nowy()){
+
+
+                    $cc1++;
+                    $sizeToday+=$obj->size;
+                    $mIpTotalByte[$obj->ip_4s_local] += $obj->size;
+                    $mCountFile[$obj->ip_4s_local]++;
+                    if(!isset($topFileToday[$obj->fid]))
+                        $topFileToday[$obj->fid] = 0;
+                    $topFileToday[$obj->fid]++;
+                    $lastToday[$obj->ip_4s_local] = $obj->time;
+                }
+
+                if($obj->time > nowy(time() - 7*_NSECOND_DAY)){
+                    if(!isset($topFile7Day[$obj->fid]))
+                        $topFile7Day[$obj->fid] = 0;
+                    $topFile7Day[$obj->fid]++;
+                }
+
+
+                if($cc > $count - 100){
+                    $of = new \Base\ModelCloudFile($obj->fid);
+                    $u1 = $u2 = '';
+                    if($obj->userdownload){
+                        $u1 = \Base\ModelUserCms::getUserInfoEx('username');
+                        if($u1[0] == '_'){
+                            $u1 = \Base\ModelUserCms::getUserInfoEx('email');
+                        }
+                    }
+
+                    $padSpeed = '';
+                    if($obj->speed)
+                        $padSpeed = ByteSize($obj->speed). "/s ";
+
+                    $lastStr.= " $obj->fid / $obj->time | UDL: $obj->userdownload ($padSpeed) ($u1) | $obj->ip | Local: $obj->ip_4s_local  | " . ByteSize($obj->size) . " | $of->name  \r\n ";
+                }
+            }
+            arsort($topFileToday);
+            arsort($topFileAllTime);
+            arsort($topFile7Day);
+            arsort($topUserTodaySize);
+            arsort($topUserTodayCount);
+            arsort($topUser7daySize);
+            arsort($topUser7dayCount);
+
+
+            foreach ($mIpTotalByte AS $ipL => $byte){
+                $nF = $mCountFile[$ipL];
+                echo $svIp1[$ipL] . " - $ipL | ".ByteSize($byte)." | LastDL : ".$lastToday[$ipL]." ($nF) <br>";
+            }
+
+            $lastStr = ClassLog4S::getLastLogTmp(50 );
+
+            echo "- Today = ".ByteSize($sizeToday). "/ $cc1";
+            echo "<br/>\n - TotalSize = ".ByteSize($totalSize). "/ $cc";
+            echo "<textarea class='info1' style='height: 100px;'> $lastStr  ";
+            echo "</textarea>";
+
+
+            $cc3 = $sizeTT = 0;
+            echo "\n <br>Top Today ";
+            echo "<br/>\n";
+            foreach ($topFileToday AS $fid=>$cd){
+                $cc3++;
+                if($cc3 > 10 || $cd <2)
+                    break;
+                $cfile = new \Base\ModelCloudFile();
+                $cfile->getOne($fid);
+                $sizeTT += $cfile->size;
+                $padInCache = "";
+                if(file_exists("/var/ufile/cache_fs/$cfile->id"))
+                    $padInCache = "-InCache";
+                echo "\n $cd | ".ByteSize($cfile->size)." | $cfile->createdAt | ($cfile->id$padInCache) $cfile->name<br/>";
+            }
+            echo "\n Size Top ToDay:" . ByteSize($sizeTT);
+
+            echo "<hr/>\n";
+            echo "\n Top 7 day <br/>";
+            $cc3 = $sizeTT = 0;
+            foreach ($topFile7Day AS $fid=>$cd){
+                $cc3++;
+                if($cc3 > 10 || $cd < 4)
+                    break;
+                $cfile = new \Base\ModelCloudFile();
+                $cfile->getOne($fid);
+                $sizeTT += $cfile->size;
+                $padInCache = '';
+                if(file_exists("/var/ufile/cache_fs/$cfile->id"))
+                    $padInCache = "-InCache";
+                echo " $cd | ".ByteSize($cfile->size)." | $cfile->createdAt | ($cfile->id$padInCache) $cfile->name<br/>";
+            }
+            echo "\n Size Top 7Day:" . ByteSize($sizeTT);
+
+            echo "<hr/>\n";
+            echo "\n Top Allday <br/>";
+            $cc3 = 0;
+            foreach ($topFileAllTime AS $fid=>$cd){
+                $cc3++;
+                if($cc3 > 10 || $cd < 10)
+                    break;
+                $cfile = new \Base\ModelCloudFile();
+                $cfile->getOne($fid);
+                echo " $cd | ".ByteSize($cfile->size)." | $cfile->createdAt | ($cfile->id) $cfile->name<br/>";
+            }
+
+            echo "<hr/>\n";
+            $cc3 = 0;
+            echo "\n TopUser Today ";
+            echo "<br/>\n";
+            foreach ($topUserTodaySize AS $uid=>$size){
+                $cc3++;
+                if($cc3 > 20)
+                    break;
+                if(!$uid)
+                    continue;
+                $obj1 = new \Base\ModelUserCms();
+                $obj1->getOne($uid);
+                $nf = $topUserTodayCount[$uid];
+                echo $cc3 . " . " .ByteSize($size). " ($nf) / $obj1->id / $obj1->username ";
+                echo "<br/>\n";
+            }
+
+            echo "<hr/>\n";
+            $cc3 = 0;
+            echo "\n TopUser 7 day ";
+            echo "<br/>\n";
+
+            foreach ($topUser7daySize AS $uid=>$size){
+                $cc3++;
+                if($cc3 > 20)
+                    break;
+                if(!$uid)
+                    continue;
+                $obj1 = new \Base\ModelUserCms();
+                $obj1->getOne($uid);
+                $nf = $topUser7dayCount[$uid];
+                echo $cc3 . " . " .ByteSize($size). " ($nf) / $obj1->id / $obj1->username ";
+                echo "<br/>\n";
+            }
+
+            $str = "";
+            //arsort($userListToday);
+            $ttU = count($userListToday);
+            $nSub = $nSubMb = $nSubVt= 0;
+            foreach ($userListToday AS $uid=>$cd){
+                $uname = \Base\ModelUserCms::getUserInfoEx($uid, 'username');
+                $str.="$uname\n";
+                if(ClassUser4S::isSubUsernameStatic($uname)){
+                    $nSub++;
+                }
+                if(ClassUser4S::isSubMV_($uname)){
+                    $nSubMb++;
+                }
+                if(ClassUser4S::isSubVT_($uname)){
+                    $nSubVt++;
+                }
+            }
+            echo "<hr/>\n NSUB = $nSub / $ttU, nMobi = $nSubMb , nSubVt = $nSubVt";
+            echo "<textarea class='info1' style='height: 100px;'> $str </textarea>";
+            ?>
+        </div>
+
+    <div class="box box-primary">
+        <div class="box-header with-border">
+            <h3 class="box-title">BlockIPList: </h3>
+        </div><!-- /.box-header -->
+        <?php
+
+        $ipFileBlock = "/var/glx/weblog/block_ip.txt";
+        $cont = '';
+        if(file_exists($ipFileBlock)){
+            $cont = file_get_contents($ipFileBlock);
+
+            $mm = file($ipFileBlock);
+            echo "\n countIPlist: " . count($mm);
+            $m1 = [];
+            //unlink($ipFileBlock);
+            foreach ($mm AS $stt =>$ip){
+                $ip = trim($ip);
+                $stt = trim($stt);
+                if(!$ip || !$stt)
+                    continue;
+                if(!isset($m1[$ip]))
+                    $m1[$ip] = 0;
+                $m1[$ip]++;
+                //if($m1[$ip] == 1)
+                    //output($ipFileBlock, $ip);
+            }
+            //echo "\n countM1: " . count($m1);
+        }
+        echo "<textarea class='info1' id='ipListBlock' style='height: 100px;'>$cont";
+        echo "</textarea>";
+        ?>
+        <button class="btn btn-info" onclick="saveIPList()">SAVE</button>
+    </div>
+
+    <div class="box box-primary">
+        <div class="box-header with-border">
+            <h3 class="box-title">Last Search Info: </h3>
+        </div><!-- /.box-header -->
+        <?php
+        $logFile = "/var/glx/weblog/search/search_log_index.log";
+        $lastIndexInfo = CFile::getNByteLast($logFile , 2000);
+        echo "<textarea class='info1'>$lastIndexInfo";
+        echo "</textarea>";
+        ?>
+    </div>
+
+    <div class="box box-primary">
+        <div class="box-header with-border">
+            <h3 class="box-title">SiteMap Info: </h3>
+        </div><!-- /.box-header -->
+        <?php
+        $logFile = "/var/glx/weblog/sitemap_".DOMAIN_MAIN.".log";
+        $lastIndexInfo = CFile::getNByteLast($logFile , 2000);
+        echo "<textarea class='info1'>$lastIndexInfo";
+        echo "</textarea>";
+        ?>
+    </div>
+
+
+
+    <div class="box box-primary">
+        <div class="box-header with-border">
+            <h3 class="box-title">RS GLX Server </h3>
+        </div><!-- /.box-header -->
+        <?php
+        $lastStr = CFile::getNByteLast("/var/glx/weblog/tmp_glx_start_server_if_off.log", 2000);
+        echo "<textarea class='info1' style='height: 100px;'> $lastStr  ";
+        echo "</textarea>";
+        ?>
+    </div>
+
+    <hr>
+
+</section>
+<!-- /.content -->
+
+<script>
+    $(document).ready(function(){
+        var $textarea = $('.info1');
+        $textarea.scrollTop($textarea[0].scrollHeight);
+    });
+
+    function saveIPList() {
+        var text1 = $('#ipListBlock').val();
+        //alert("Text = " + text1);
+
+        var data = {};
+        data['ip_list'] = text1;
+        var urlPost = "/a_p_i/admin/save-ip-block-list";
+        $.post(urlPost, data, function(result){
+
+            if(result.indexOf('no_change_ip_list') != -1){
+                showToastWarningTop("NO THING CHANGE!");
+                return;
+            }
+
+            if(result.indexOf('done_change_ip_list') != -1){
+                showToastInfoTop("DONE!");
+            }
+            else{
+                console.log(" Error1 = " + JSON.stringify(result));
+                alert("Error: " + result);
+            }
+
+
+        });
+
+    }
+
+
+
+
+</script>

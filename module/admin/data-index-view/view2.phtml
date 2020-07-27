@@ -1,0 +1,197 @@
+<!-- Content Header (Page header) -->
+<section class="content-header">
+    <h1>
+        Data-View2
+        <small> <a href="/admin/data-index/index2">Index</a> </small>
+    </h1>
+    <ol class="breadcrumb">
+        <li><a href="#"><i class="fa fa-dashboard"></i> Home</a></li>
+        <li class="active">Data list</li>
+    </ol>
+</section>
+
+<style>
+    div[id^='to_update_']{
+        max-height:600px;
+    }
+</style>
+
+<?php
+
+$params = \Base\ClassRoute::getArrParams();
+$paramsPost = $_POST;
+$id = $params['id'];
+clsDbTableMng::$gidCurrent = getCurrentGid();
+clsDbTableMng::$class = \Base\ModelDataFile::class;
+clsDbTableMng::setAllowAddButton(1);
+clsDbTableMng::setAllowSaveButtonOnEdit(1);
+clsDbTableMng::setUrlEditActionInList("/admin/admin-index/view2");
+clsDbTableMng::setUrlApi("/a_p_i/member-data");
+
+$obj1 = new clsDbTableMng::$class;
+
+if ($obj1 instanceof \Base\ModelDataFile) ;
+
+if(!$obj1->getOne($id)){
+    loi("Not found id?");
+}
+?>
+
+<!-- Main content -->
+<section class="content">
+    <?php
+        require_once "application/block/upload_image_clipboard_v2.php";
+        require_once "application/block/upload_script_mongo.php";
+
+//        uploadFileZone();
+//        imagesOfNews($obj1);
+
+    clsUpload::uploadFileForm();
+    clsUpload::uploadFileLink($obj1->getId());
+    clsDbTableMng::imagesOfNews($obj1);
+
+    ?>
+    <br>
+
+    <button onclick="clsTree.openModalMoveItem('<?php echo $id ?>', 'file')">
+        Move to Folder
+    </button>
+    <button onclick="clsTree.openModalAddMultiFolder('<?php echo $id ?>')">
+        Add To Folder
+    </button>
+
+    <?php
+    //clsTree.openModalMoveItem(idItem, 'file');
+
+    //clsTree.openModalAddMultiFolder(idItem);
+
+    //$apiUrl = "/a_p_i/admin/mng-db-table?modelDb=" . urlencode(clsDbTableMng::$class);
+
+
+    clsDbTableMng::getInsertFormPost();
+
+
+    echo "<br/>\n";
+    clsDbTableMng::showEditForm($params['id']);
+    echo "<br/>\n";
+    goto _END;
+
+    _END:
+
+    clsTreeMng::showMoveModals();
+
+    ?>
+
+</section>
+<!-- /.content -->
+<!-- Main content -->
+
+
+<script>
+
+    tinymce.init({
+        selector: '#to_update_<?php echo $id ?>-content',
+        plugins: [
+            "anchor autolink codesample colorpicker contextmenu fullscreen help image imagetools",
+            " paste code lists link media noneditable preview",
+            " searchreplace table template textcolor visualblocks wordcount"
+        ], //removed:  charmap insertdatetime print
+        entity_encoding : "raw",
+        image_title: true,
+        automatic_uploads: true,
+        file_picker_types: 'image',
+        paste_data_images: true,relative_urls : false,
+        remove_script_host : true,
+        document_base_url : "/",
+        convert_urls : true,
+        image_class_list: [
+            {title: 'Responsive', value: 'img-responsive'}
+        ],
+        //toolbar: "sizeselect | bold italic | fontselect |  fontsizeselect | align | forecolor backcolor link image",
+        toolbar:
+            "insertfile a11ycheck undo redo paste | fontselect sizeselect fontsizeselect bold italic | forecolor backcolor | template codesample | alignleft aligncenter alignright alignjustify | bullist numlist | link image media",
+        file_picker_callback: function (cb, value, meta) {
+            var input = document.createElement('input');
+            input.setAttribute('type', 'file');
+            input.setAttribute('accept', 'image/*');
+            input.onchange = function () {
+                var file = this.files[0];
+                var reader = new FileReader();
+
+                reader.onload = function () {
+                    var id = 'blobid' + (new Date()).getTime();
+                    var blobCache = tinymce.activeEditor.editorUpload.blobCache;
+                    var base64 = reader.result.split(',')[1];
+                    var blobInfo = blobCache.create(id, file, base64);
+                    blobCache.add(blobInfo);
+                    cb(blobInfo.blobUri(), {title: file.name});
+                };
+                reader.readAsDataURL(file);
+            };
+            input.click();
+        }
+    });
+</script>
+
+<script>
+    clsDataTblMng.apiUrl = '<?php   echo  clsDbTableMng::getUrlApi();    ?>';
+    clsUpload.url_server = "/a_p_i/member-cloud/upload/?function_update_data=<?php echo eth1b('callBackUpdateImageIdToData2Mysql') ?>&update_id=<?php echo $id ?>";
+    clsTree.apiBase = '/a_p_i/admin-data2-list';
+</script>
+
+<script>
+    function uploadDone1(data) {
+        console.log(" Done1 = ", data);
+        var data1 = JSON.parse(data);
+        if(!ClassApi.checkReturnApi(data1)){
+            return;
+        }
+        console.log("Ret = ", data1);
+        console.log("Ret filename = ", data1.payload[0].filename);
+        console.log("Ret id_cloud = ", data1.payload[0].id_cloud);
+        var urlThumb = data1.payload[0].extra_info_update.split('|seperator_mark|')[0];
+        var fid = data1.payload[0].extra_info_update.split('|seperator_mark|')[1];
+
+        if(urlThumb){
+            document.getElementById('sortable_img').insertAdjacentHTML("beforeend", '<span class="img_of_news ui-state-default" id="cloud_id_img_' + fid + '"> \n' +
+                '<input  checked type=\'checkbox\' id=\'enable_img_cloud_' + fid + '\'> <label id=\'label_id_' + fid + '\' for=\'enable_img_cloud_' + fid + '\' > Show </label> \n' +
+                '<br/> <a href=\'' + urlThumb +'\' target=\'_blank\'> <img style=\'max-width: 150px; max-height: 150px\' src=\'' + urlThumb +'\'> </a>\n' +
+                '<br>\n' +
+                '</span>');
+        }
+    }
+
+</script>
+
+<?php
+require_once "application/block/upload_script_mongo.php";
+
+if(isAdmin_()){
+
+    $obj1->getOneId($id);
+    unset($obj1->content);
+    echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+    print_r($obj1);
+    echo "</pre>";
+    if ($obj1 instanceof modelNewsFile2) ;
+
+    $mid = explode(",", $obj1->image_list);
+    $mid = array_filter($mid);
+    foreach ($mid AS $fid){
+        $cfile = new \Base\ModelCloudFile();
+        $fid = abs($fid);
+        if(!$cfile->getOne($fid)){
+            echo "<br/>\n Can not find $fid file";
+            continue;
+        }
+        echo "<b>Image File </b>: $cfile->name, $cfile->link1";
+
+        $thumb = $cfile->createThumbnail();
+
+//        echo "<br/>\n THUMB: $thumb ";
+//
+        echo "<br/>\n";
+    }
+}
+
+?>

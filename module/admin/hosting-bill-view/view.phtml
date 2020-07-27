@@ -1,0 +1,344 @@
+<script>
+
+    ClassSettingApp.notLoadList = 1;
+
+</script>
+<!-- Content Header (Page header) -->
+
+
+<?php
+
+$params = \Base\ClassRoute::$arrParams;
+
+$bId = $params['id'];
+
+$bill = new \Base\ModelBillHosting();
+if(!$bill->getOne($params['id'])){
+    bl("Not found this bill?");
+    return;
+}
+
+if($bill instanceof \Base\ModelBillHosting){
+    $objUser = new \Base\ModelUserCms($bill->userid);
+}
+
+//echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+//print_r($bill);
+//echo "</pre>";
+$hostConf0 = json_decode($bill->array_info);
+$hostConf = new \Base\ModelHostingServerEx();
+$hostConf->loadFromObj($hostConf0);
+
+//echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+//print_r($hostConf);
+//echo "</pre>";
+
+
+?>
+
+
+
+<div style="padding: 20px">
+
+    <style>
+        tr, td {
+            padding: 2px 5px;
+        }
+    </style>
+
+    <br>
+    <h4>Hợp đồng Hosting số :<?php echo qqgetRandFromId($bill->id) . " / $objUser->email"?></h4>
+    <a target="_blank" href="https://galaxycloud.vn/member/hosting-bill/view/id/<?php echo qqgetRandFromId($bill->id) ?>"> Member View </a>
+
+    <!--                    <span  ng-repeat="(prop, val) in $bill.array_info" >-->
+    <!--                        {{prop?> : {{val?> <br>-->
+    <!--                    </span>-->
+    <?php
+    if($hostConf instanceof \Base\ModelHostingServerEx);
+
+    ?>
+    <table class="table-striped">
+        <tr>
+            <th>Cấu hình</th>
+            <td><input type="text" id="host__name" value="<?php echo @$hostConf->name  ?>"></td>
+        </tr>
+        <tr>
+            <td>Loại server </td>
+            <td><?php echo strtoupper(@$hostConf->type) ?></td>
+        </tr>
+        <tr>
+            <th>Server Info</th>
+            <td>
+
+                <?php //echo @@$bill->server_ip ." / " .$bill->product_name ." / ". $bill->server_name ." / $bill->server_id"
+                echo $bill->product_name;
+                ?>
+                <table>
+                <tr>
+                    <td>
+                ServerName:
+                    </td>
+                    <td>
+                    <input type="text" id="bill__server_name" value="<?php echo @$bill->server_name  ?>">
+                    </td>
+                </tr>
+                    <td>
+                ServerIP:
+                    </td>
+                    <td>
+                    <input type="text" id="bill__server_ip" value="<?php echo @$bill->server_ip  ?>">
+                    </td>
+                </tr>
+                    <td>
+                VmId:
+                    </td>
+                    <td>
+                    <input type="text" id="bill__server_id" value="<?php echo @$bill->server_id  ?>">
+                    </td>
+                </tr>
+                </table>
+            </td>
+        </tr>
+        <tr>
+            <td>Số core</td>
+            <td><input type="text" id="host__vcore" value="<?php if(isset($hostConf->vcore)) echo $hostConf->vcore  ?>">  vCore</td>
+        </tr>
+        <tr>
+            <td>Dung lượng RAM </td>
+            <td><input type="text" id="host__memory" value="<?php if(isset($hostConf->memory)) echo $hostConf->memory  ?>"> GB</td>
+        </tr>
+        <tr>
+            <td>Dung lượng SSD</td>
+            <td><input type="text" id="host__ssd" value="<?php if(isset($hostConf->ssd)) echo $hostConf->ssd  ?>">  GB</td>
+        </tr>
+        <tr>
+            <td>Đường truyền</td>
+            <td><input type="text" id="host__bandwidth" value="<?php if(isset($hostConf->bandwidth)) echo $hostConf->bandwidth  ?>"> Mbit/s</td>
+        </tr>
+        <tr>
+            <td>Số địa chỉ IP</td>
+            <td><input type="text" id="host__number_ip" value="<?php if(isset($hostConf->number_ip)) echo $hostConf->number_ip  ?>"> </td>
+        </tr>
+        <tr>
+            <td>Số tháng</td>
+            <td><input type="text" id="bill__nMonth" value="<?php echo @$bill->nMonth  ?>"> </td>
+        </tr>
+        <tr>
+            <td>Số lượng server</td>
+            <td><input type="text" id="bill__quantity" value="<?php echo @$bill->quantity  ?>"> </td>
+        </tr>
+        <tr>
+            <td>Chi phí 1 tháng</td>
+            <td><input type="text" id="bill__price_one_month" value="<?php echo @$bill->price_one_month  ?>">  K</td>
+        </tr>
+        <tr>
+            <td><b>Tổng chi phí</b></td>
+            <td><b><input type="text" id="bill__price_total" value="<?php echo @$bill->price_total  ?>"> K</b></td>
+        </tr>
+        <tr>
+            <td>Ngày đăng ký</td>
+            <td><input type="text" id="bill__createdAt" value="<?php echo @$bill->createdAt  ?>"> <?php echo $bill->createdAt?></td>
+        </tr>
+        <tr>
+            <td>Ngày thanh toán</td>
+            <td><input type="text" id="bill__payedAt" value="<?php echo $bill->payedAt  ?>"> <span style="color: brown"> <?php echo $bill->payedAt ?  $bill->payedAt : "Chưa thanh toán"?> </span></td>
+        </tr>
+        <tr>
+            <td>Ngày Sử dụng</td>
+            <td><input type="text" id="bill__time_start" value="<?php echo $bill->time_start  ?>"> </td>
+        </tr>
+        <tr>
+            <td>Ngày hết hạn</td>
+            <td><input type="text" id="bill__time_expired" value="<?php echo $bill->time_expired  ?>"></td>
+        </tr>
+        <tr>
+            <td>Comment: <br>
+
+            </td>
+            <td><textarea style="width: 500px; height: 100px" type="text" id="bill__comment" value=""></textarea>
+            </td>
+
+
+        </tr>
+        <tr><td>Last comment: </td>
+            <td><textarea id="bill__all_comment"  style="width: 100%; min-height: 100px"><?php echo $bill->comment;
+//                $str = str_replace("###", "<br/>", $bill->comment);
+//                $str = str_replace("\r\n", "<br/>", $str);
+//                $str = str_replace("\n\r", "<br/>", $str);
+//                $str = str_replace("\n", "<br/>", $str);
+//                $str = str_replace("\r", "<br/>", $str);
+//                echo $str;
+                ?></textarea></td>
+        </tr>
+    </table>
+
+    <br>
+
+    <button type="button" class="btn btn-warning" onclick="saveBillData()">Save</button>
+
+    <?php
+    if(!$bill->payedAt) {
+        ?>
+
+        <?php
+    }
+    ?>
+
+    <a href="/admin/hosting-bill/">
+        <button type="button" class="btn btn-info">Cancel</button>
+    </a>
+
+    <br>
+
+    <br>
+    <?php
+
+    if(is_numeric($bId))
+        $bId = qqgetRandFromId($bId);
+
+
+    if(isAdminGroup_()){
+        ?>
+
+        <input type="hidden" id="to_1" value="<?php echo $objUser->email; ?>">
+
+        Title: <input id="title_1" style="width: 500px" value="GalaxyCloud - Thông báo hết hạn Hosting - <?php echo $bId ." (" . $bill->server_name ?>)">
+        <button onclick="changeContentBill()"> Change </button>
+        <br>
+        Content:
+        <br>
+        <textarea  id="content_1"  cols="100" rows="10"><?php
+            $priceOK = $bill->price_total * 1000;
+            $priceString = \Base\ClassString::toTienVietNamString($priceOK);
+            $priceFormat = number_format($priceOK, 0);
+          echo "Kính chào Quý khách hàng!\n";
+          echo "GalaxyCloud xin thông báo: Hợp đồng hosting số <a href='https://galaxycloud.vn/member/hosting-bill/view/id/$bId'>$bId</a> đã đến hạn thanh toán!\n";
+          echo "Server name: $bill->server_name \n";
+          echo "Tổng chi phí: $priceFormat VNĐ ($priceString đồng) \n";
+          echo "Bao gồm: $priceString đồng\n";
+          echo "Hạn sử dụng đến: $bill->time_expired\n";
+          echo "Số tài khoản thanh toán: 0021001480409 – LÊ ANH DŨNG – Vietcombank Hà Nội \n";
+          echo "Chi tiết hóa đơn <a href='https://galaxycloud.vn/member/hosting-bill/view/id/$bId'>Tại đây</a>\nXin cảm ơn Quý khách hàng!\n";
+          echo "---------------\n <a href='http://galaxycloud.vn'>GalaxyCloud - The BestHosting Service!</a>";
+        ?></textarea>
+        <br>
+        <button onclick="sendMailHostingBill()">Send Mail to <?php  echo $objUser->email; ?></button>
+
+        <?php
+
+    }
+    ?>
+
+    <br>
+
+    <hr>
+    <b>Change Log:
+    </b>
+
+        <?php echo  str_replace(array("###","|"),"<br/>",$bill->use_log); ?>
+
+
+
+</div>
+
+<script>
+
+    function changeContentBill() {
+        var title_1 = $("#title_1").val();
+        var content_1 = $("#content_1").val();
+
+        if(title_1.indexOf("Thông báo hết hạn Hosting") > 0){
+            $("#title_1").val(title_1.replace("Thông báo hết hạn Hosting", "Thông báo Đã thanh toán thành công"));
+            $("#content_1").val(content_1.replace("đã đến hạn thanh toán", "đã thanh toán thành công!"));
+
+        }
+        else {
+            $("#title_1").val(title_1.replace("Thông báo Đã thanh toán thành công", "Thông báo hết hạn Hosting"));
+            $("#content_1").val(content_1.replace("đã thanh toán thành công!", "đã đến hạn thanh toán"));
+        }
+    }
+    
+    function sendMailHostingBill() {
+
+        var urlGet = "/a_p_i/admin-hosting-bill/send-mail-hosting-bill";
+
+        var data1 = {};
+
+        data1['to'] = $("#to_1").val();
+        data1['title'] = $("#title_1").val();
+        data1['content'] = $("#content_1").val();
+
+        showWaittingIcon();
+        $.post(urlGet, data1, function(data, status){
+
+            hideWaittingIcon();
+
+            //alert("Data: " + data + "\nStatus: " + status);
+            if(!ClassApi.checkReturnApi(data)){
+                return;
+            }
+
+            if(data.payload == 0){
+                showToastWarningBottom(" ?????? ");
+            }
+            if(data.payload != 0) {
+                showToastInfoBottom("Send Mail done?");
+                //location.reload();
+            }
+
+        });
+
+
+    }
+
+    function saveBillData() {
+
+        var urlGet = "/a_p_i/admin-hosting-bill/save-bill-change/id/" + '<?php echo $bill->id ?>';
+
+        var data1 = {};
+
+        $("[id^='bill__']").each(function () {
+            console.log(" id = " + this.id + " / " + this.value);
+            //urlGet+= "/" + this.id + "/" + this.value;
+            data1[this.id] = this.value;
+        })
+
+        $("[id^='host__']").each(function () {
+            console.log(" id = " + this.id + " / " + this.value);
+            //urlGet+= "/" + this.id + "/" + this.value;
+            data1[this.id] = this.value;
+        })
+
+        //console.log(" URL GET = " + urlGet);
+
+         $.post(urlGet, data1, function(data, status){
+
+                 //alert("Data: " + data + "\nStatus: " + status);
+             if(!ClassApi.checkReturnApi(data)){
+                 return;
+             }
+
+             if(data.payload == 0){
+                 showToastWarningBottom(" Not update");
+             }
+             if(data.payload != 0) {
+                 //showToastInfoBottom("Update OK!");
+                 location.reload();
+             }
+
+        });
+
+
+    }
+
+</script>
+
+<?php
+
+if(isAdmin_()){
+    echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+    print_r($bill);
+    echo "</pre>";
+}
+
+?>

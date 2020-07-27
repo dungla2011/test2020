@@ -1,0 +1,176 @@
+<?php
+if(!isset($obj))
+    $obj = new \Base\ModelDemoViDu();
+if(!isset($urlBase))
+    $urlBase = "/a_p_i/demo";
+
+$class = get_class($obj);
+
+
+$module = \Base\ClassRoute::getCurrentModule();
+$controller = \Base\ClassRoute::getCurrentController();
+$action = \Base\ClassRoute::getCurrentAction();
+$strToSaveSession = str_replace("-", "_", $module . $controller . $action);
+
+$params = \Base\ClassRoute::getArrParams();
+
+if (isset($params['id'])) {
+    $idRand = $params['id'];
+    $id = qqgetIdFromRand($params['id']);
+    if (!is_numeric($id)) {
+        loi("Not valid id?");
+    }
+
+    //bl("ID = $id");
+
+    $obj = new $class;
+    if (!$obj->getOne($id)) {
+        bl("Không tồn tại id này? $idRand");
+        return;
+    }
+}
+if (isset($params['create_new'])) {
+    $obj = new $class;
+    //$obj->initEmptyObject();
+}
+
+?>
+
+<script src="/public/libaries/tinymce/tinymce.min.js"></script>
+
+<script>
+    <?php
+    if(isset($params['create_new'])){
+    ?>
+    var urlPost = '<?php echo $urlBase?>/add/';
+    <?php
+    }
+    else{
+    ?>
+    var urlPost = '<?php echo $urlBase?>/save/?' + "&id=" + '<?php echo $obj->id ?>';
+    <?php
+    }
+    ?>
+</script>
+
+<div style="padding: 10px">
+
+<?php
+    require_once "application/block/view/admin_view.php";
+
+    $arrEdit = $obj->getArrayEditable();
+    $arrMeta = $obj->getMetaDataApi();
+
+    echo "<br/><div style='float: left; max-width: 600px; padding : 10px'>";
+
+    echo "<table class='glx03'>";
+    foreach ($arrEdit as $field) {
+        //if (!in_array("$field", ['summary', 'content', 'parent']))
+        if(1)
+        {
+            $val = null;
+            if(isset($obj->$field))
+                $val = $obj->$field;
+            $fieldU = strtoupper($field);
+            $fieldU = $obj->getMetaNameField("$field", null, $arrMeta);
+
+            if (isset($params['create_new'])) {
+            }
+
+            echo "<tr><td>$fieldU: </td>";
+            if ($obj->isStatusField($field)) {
+                $padCheck = '';
+                if (isset($obj->$field) && $obj->$field)
+                    $padCheck = 'checked';
+                echo "<td style=''><input $padCheck type='checkbox' id='edit_$field'></td>";
+            } elseif ($obj->isSelectField($field)) {
+                echo "<td>";
+                echo "<select id='edit_$field'>";
+                echo "<option value='0'>-- Select --</option>";
+
+                $arrSl = $obj->getArrSelectOnField("$field");
+                foreach ($arrSl AS $idSl=>$valSl){
+                //for($x0=1; $x0<=3; $x0++) {
+                    $padSelect = "";
+                    if($idSl == $val)
+                        $padSelect = "selected";
+                    echo "<option $padSelect value='$idSl'> $valSl</option>";
+                }
+
+                echo "</select>";
+                echo "</td>";
+            }
+            else
+                echo "<td><input style='width: 400px' class='form-control' id='edit_$field' value='$val' title='$val'></td>";
+
+            echo "</tr>";
+        } else {
+
+        }
+    }
+    echo "</table>";
+    echo "</div>";
+
+    ?>
+</div>
+
+<script>
+    function saveData() {
+        var data1 = {};
+        <?php
+        foreach ($arrEdit as $field) {
+            if($obj->isStatusField($field)){
+
+            }
+
+            {
+        ?>
+            var fieldName = '<?php echo $field?>';
+            var elmId = "#edit_" + fieldName;
+                if($(elmId).is(':checkbox')){
+                    if($(elmId).prop("checked") == true)
+                        data1[fieldName] = 1;
+                    else
+                        data1[fieldName] = 0;
+                }
+                else
+                    data1[fieldName] = $(elmId).val();
+        <?php
+            }
+        }
+        ?>
+
+        console.log(" DAA1 = " + JSON.stringify(data1));
+        console.log(" urlPost Save = " + urlPost);
+
+        showWaittingIcon();
+        $.post(urlPost, data1, function (result) {
+            hideWaittingIcon();
+
+            if (!ClassApi.checkReturnApi(result))
+                return;
+            if (result.payload == 0)
+                showToastWarningBottom("Nothing update?");
+            else
+                showToastInfoBottom("Done?");
+            <?php
+            if(isset($params['create_new'])){
+            ?>
+            window.location.href = "<?php echo "/$module/$controller/edit/id/" ?>" + result.payload;
+            <?php
+            }
+            ?>
+        });
+    }
+</script>
+
+<div style="clear: both"></div>
+<?php
+
+if(isset($obj)){
+echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+    print_r($obj);
+    echo "</pre>";
+}
+
+?>

@@ -1,0 +1,294 @@
+<!-- Content Header (Page header) -->
+<section class="content-header">
+    <h1>
+        <a href="/admin/db-mng">DbTableManagerment</a>
+    </h1>
+    <ol class="breadcrumb">
+        <li><a href="#"><i class="fa fa-dashboard"></i> Home</a></li>
+        <li class="active">Dashboard</li>
+    </ol>
+</section>
+
+<!-- Main content -->
+<section class="content">
+    <div style='width: 100%; background-color: ; border: 0px solid grey; padding: 0px; overflow-x:auto;'>
+
+<?php
+if(!isAdminEmail()){
+   bl("Not access!");
+   goto _END;
+}
+
+$params = \Base\ClassRoute::getArrParams();
+$paramsPost = $_POST;
+
+clsDbTableMng::$gidCurrent = getCurrentGid();
+
+$mgid = \Base\ModelUserGroup::getArrayWhereSql("1");
+
+
+//echo " GID : "  . clsDbTableMng::$gidCurrent ."  ";
+
+//clsDbTableMng::$class = 'modelDemo1Mongo_Meta';
+
+
+
+$mmClass = [modelDemo1Mongo::class,
+    \Base\modelTreeDemoMongo1::class,
+    modelNewsFile2::class,
+    modelNewsFolder2::class,
+    modelCloudFile2::class,
+    modelCloudFolder2::class,
+    \Base\ModelDataFile::class,
+    \Base\ModelDataFolder::class,
+    \Base\ModelCloudFile::class,
+    \Base\ModelCloudFolder::class,
+    ClassGoldCms::class,
+    \Base\ModelNewsFile::class,
+    \Base\ModelNewsFolder::class,
+    \Base\ModelImageCmsFolder::class,
+    \Base\ModelImageCmsFile::class,
+    \Base\ModelUISetting::class,
+    ];
+
+if(ClassSetting::$siteId <=0){
+    $mmClass[] = \Base\modelIpHosting::class;
+    $mmClass[] = \Base\modelHostingVps::class;
+    $mmClass[] = \Base\ModelBillHosting::class;
+}
+
+
+$urlOrg = ctoolUrl::getUriWithoutParam();
+
+if(isset($params['modelDb']))
+    clsDbTableMng::$class = $params['modelDb'];
+
+echo "<div class=\"form-group\" style='width: 50%; max-width: 200px; display: inline-block'>";
+//View theo GID:
+if(!isset($params['meta_mng']) && isset($params['modelDb'])) {
+
+
+    echo "<select class='form-control' onchange=\"if (this.value) window.location.href=this.value\">";
+
+    $padSelect = '';
+    $linkG0 = ctoolUrl::setUrlParam(null,"gid", null);
+    echo "<option value='$linkG0'> --- SELECT GID --- </option>";
+
+    foreach ($mgid as $ogid) {
+
+        $linkG = ctoolUrl::setUrlParam(null,"gid", $ogid->id);
+
+        if ($ogid instanceof \Base\ModelUserGroup) ;
+        echo "$ogid->id / $ogid->groupname";
+
+        $padSelect = "";
+
+        if(isset($params['gid']))
+        if($ogid->id == $params['gid']) {
+            $padSelect = "selected";
+            clsDbTableMng::$gidCurrent = $params['gid'];
+        }
+
+        echo "<option $padSelect value='$linkG'> $ogid->groupname ($ogid->id) ";
+        //echo " <a style='$padStyle' href='$link'><b>$cl</b></a> [<a href='$link&delete_list=1' class='fa fa-trash'>  </a>]  [<a style='$padStyle1' target='_blank'  href='$linkMetaMng'> Meta </a>]";
+        echo "</option> ";
+
+    }
+    echo "</select>";
+
+}
+else{
+    echo "<select class='form-control'><option> --- Show Group Id --- </option>";
+    foreach ($mgid as $ogid) {
+        echo "<option > $ogid->groupname ($ogid->id) ";
+        //echo " <a style='$padStyle' href='$link'><b>$cl</b></a> [<a href='$link&delete_list=1' class='fa fa-trash'>  </a>]  [<a style='$padStyle1' target='_blank'  href='$linkMetaMng'> Meta </a>]";
+        echo "</option> ";
+    }
+    echo "</select>";
+}
+echo "</div>";
+
+echo "<div class=\"form-group\" style='width: 50%; max-width: 200px; display: inline-block'>";
+echo "<select class='form-control' onchange=\"if (this.value) window.location.href=this.value\">";
+echo "<option> --- SELECT MODEL --- </option>";
+$link = '';
+foreach ($mmClass as $cl) {
+
+    if(!class_exists($cl))
+        continue;
+
+    //$linkMetaMng = $urlOrg."?modelDb=$cl&meta_mng=1";
+    //$linkMetaMng = $urlOrg."?modelDb=$cl&meta_mng=1";
+    $linkMetaMng = ctoolUrl::setUrlParam(null,"modelDb", $cl);
+
+    if(isset($params['meta_mng']) || !isset($params['modelDb']))
+        $linkMetaMng = ctoolUrl::setUrlParam($linkMetaMng,"meta_mng", 1);
+
+    $padStyle = $padStyle1 = $padSelect =  "";
+    if(isset(clsDbTableMng::$class) && clsDbTableMng::$class == $cl){
+        $padStyle = "text-decoration: underline; ";
+        $padSelect = "selected";
+
+        $link = $urlOrg.'?modelDb='.$cl;
+
+        if(isset($params['meta_mng'])){
+            $padStyle1 ='; color: red';
+        }
+        else{
+            $padStyle .= " ; color: red";
+        }
+    }
+
+    echo "<option $padSelect value='$linkMetaMng'> ";
+    if(!strstr($cl, "\\"))
+        echo basename($cl);
+    else
+        echo explode('\\', $cl)[1];
+
+    //echo " <a style='$padStyle' href='$link'><b>$cl</b></a> [<a href='$link&delete_list=1' class='fa fa-trash'>  </a>]  [<a style='$padStyle1' target='_blank'  href='$linkMetaMng'> Meta </a>]";
+    echo "</option> ";
+}
+
+echo "</select>";
+echo "</div> ";
+
+if(isset($params['meta_mng'])) {
+    echo "\n<a style='$padStyle' href='$link'><button class='form-control btn-warning' style='max-width: 200px; display: inline-block'> Change to Data Mng </button></a>";
+}
+else{
+    $link1 = ctoolUrl::setUrlParam(null, "gid", null);
+    $link1 = ctoolUrl::setUrlParam($link1, "meta_mng", 1);
+    echo "\n<a style='' href='$link1'><button class='form-control btn-info' style='max-width: 200px; display: inline-block'>  Change to Meta Mng </button></a>";
+}
+
+echo "<br/>\n";
+//clsDbTableMng::$class = 'modelDemo1Mongo';
+
+if(isset($params['modelDb'])){
+    clsDbTableMng::$class = $params['modelDb'];
+}
+else{
+    goto _END;
+
+}
+
+//deleteSample();
+//insertSample();
+
+$obj1 = new clsDbTableMng::$class;
+if($obj1 instanceof \Base\modelBaseMongo);
+
+
+
+$tblSet = $dbSet = '';
+$isMngMeta = 0;
+if(isset($params['meta_mng'])){
+    $isMngMeta = 1;
+
+
+    $obj1 = new clsDbTableMng::$class;
+    if($obj1 instanceof \Base\modelBaseMongo);
+    $mf = $obj1->getArrField();
+
+    //Cần tblset này, để cho API quản trị bảng meta
+    $tblSet = $obj1->getMetaInfoTable();
+    echo " Meta-Table: <b> $tblSet </b>";
+    $dbSet = $obj1->getDbName();
+
+//    echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+//    print_r($mf);
+//    echo "</pre>";
+    $doneBefore = 0;
+    $cc = 0;
+
+    $obj1->createMetaTable();
+    /*
+    foreach ($mf as $field) {
+
+        //echo "\n<br> xxxx $field";
+        $cc++;
+        $objMeta = new modelMetaDataTable();
+        $objMeta->setDbName($obj1->getDbName());
+        $objMeta->setTableName($tblSet);
+
+        if($objMeta->getOneWhere(['field'=>$field]))
+        {
+            if($objMeta->sname != $objMeta->_id){
+                //echo "<br/>\n EmptySname => ";
+                $objMeta->sname = "s".$objMeta->_id;
+                $objMeta->updateMe();
+            }
+            continue;
+        }
+        $objMeta->field = $field;
+        $objMeta->insert();
+
+        $objMeta->sname = "s".$objMeta->_id;
+        $objMeta->updateMe();
+    }
+    */
+
+
+    //Nếu vào quản lý meta, thì gán lại class, để quản trị bảng của meta
+    clsDbTableMng::$class = 'modelMetaDataTable';
+
+
+//    echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+//    print_r($objMeta->getMetaDataApi());
+//    echo "</pre>";
+
+}
+
+//$apiUrl = "/a_p_i/admin-mng-db/?modelDb=" . urlencode(clsDbTableMng::$class) . '&tblSet='.$tblSet.'&dbSet='.$dbSet;
+$apiUrl = "/a_p_i/admin-mng-db";
+clsDbTableMng::setUrlApi($apiUrl);
+
+clsDbTableMng::getInsertFormPost();
+
+if(isset($params['insert_item'])){
+
+    echo "<br/>\n";
+    clsDbTableMng::showInsertForm();
+    echo "<br/>\n";
+    goto _END;
+}
+
+if(isset($params['edit_item'])){
+    echo "<br/>\n";
+    clsDbTableMng::showEditForm();
+    echo "<br/>\n";
+    goto _END;
+}
+
+
+//$obj1 = new modelDemo1Mongo();
+if(!ctoolUrl::getParamInUrl('meta_mng')){
+    clsDbTableMng::getFilterSearchUI();
+    echo "<br/>\n";
+
+}
+
+
+?>
+
+    <?php
+
+    clsDbTableMng::showTableData1();
+
+_END:
+    ?>
+    </div>
+</section>
+<!-- /.content -->
+
+<?php
+
+?>
+
+
+<script>
+    clsDataTblMng.apiUrl = '<?php echo clsDbTableMng::getUrlApi()?>';
+    clsDataTblMng.dbSet = '<?php echo $dbSet?>';
+    clsDataTblMng.tblSet = '<?php echo $tblSet?>';
+    clsDataTblMng.modelDb = '<?php echo urlencode(clsDbTableMng::$class)?>';
+</script>

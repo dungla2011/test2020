@@ -1,0 +1,197 @@
+<style>
+    .info1{
+        width: 100%; height: 100px;
+    }
+</style>
+
+<!-- Content Header (Page header) -->
+<section class="content-header">
+    <h1>
+        Dashboard
+        <small>Control panel</small>
+    </h1>
+    <ol class="breadcrumb">
+        <li><a href="#"><i class="fa fa-dashboard"></i> Home</a></li>
+        <li class="active">Dashboard</li>
+    </ol>
+</section>
+
+<style>
+    a{
+        font-size: larger;
+    }
+</style>
+
+<!-- Main content -->
+<section class="content">
+    <a target="_blank" href="https://video.galaxycloud.vn/tool/phim/update_count_play-sv.html?phantich=1">- Thống kê xem phim hàng ngày</a>
+    <br>
+    <a target="_blank" href="https://docs.google.com/document/d/1M-Ou0GomMQ5QlVI6hgBHHo8oyQL9Au1H-_iEW_Ss_HU/edit">- List Phim can update hang ngay</a>
+    <br> ...
+    <?php
+        if(isAdmin_()) {
+            
+            echo "<br/> Need Fix: ";
+            echo "<br/>\n";
+            ?>
+
+            <a target="_blank" href="/tool/phim/update_count_play-sv.html?phantich=1"> Thong ke xem hang ngay</a> |
+
+            <br>
+            <a target="_blank" href="/tool/crawler/video/bilutv/scan-new-phim-va-tap.php"> Scan One PhimLink</a> |
+            <a target="_blank" href="/tool/crawler/video/bilutv/test-getonelink.php"> Scan One Link Bilu</a> |
+            <a target="_blank" href="/tool/crawler/video/bilutv/insert_phim_link_bilu-loop2.php"> Check new Bilu</a> |
+            <a target="_blank" href="/tool/crawler/video/animehay/insert_phim_link_to_crawle-loop2.php"> Check New AnimeHay</a> |
+
+            <br>
+            <br>
+
+            <a href="/admin/data-link/view/id/119346" target="_blank">DataLink ID</a> |
+
+            <a href="/admin/data-link/index/sortField/id/sortType/DESC/limit/25" target="_blank">DataLink Last Sort</a>
+
+            <br>
+            <br>
+            <a href="/admin/data-index/view/id/rg497314" target="_blank">DataFile /admin/data-index/view/id/rg497314</a>
+            <br><br>
+            <a href="/admin/cloud-file/edit/page/1/id/124037" target="_blank">CloudFile /admin/cloud-file/edit/page/1/id/124037</a>
+
+            <br><br>
+            <a href="/admin/cloud-file/index/limit/100/sortField/id/sortType/DESC" target="_blank">List FIle </a>
+
+            <br><br>
+            <a href="/tool/crawler/video/bilutv/test_video_all_link_debug_ok.php" target="_blank">Test Get Video Url Bilu</a>
+            | <a href="/tool/crawler/video/animehay/test_get_video_stream_type_ok.php" target="_blank">Test Get Video Url AnimeH</a>
+            <br><br>
+            <a href="/tool/phim/thong-ke.php" target="_blank">Tổng hợp phim</a>
+            <br><br>
+
+            <a href="/tool/phim/error_phim_ko_co_img0.html" target="_blank">Daily Check phim khong co Image0 </a>
+            <br><br>
+
+
+            - Scan file daily report, check file lost:
+
+            <?php
+            $ret = CFile::getNByteLast("/var/glx/weblog/phim/check_lost_file_daily.log", "200");
+                echo "<pre>";
+                print_r($ret);
+                echo "</pre>";
+            ?>
+
+            - User see lost file:
+            <?php
+            $ret = CFile::getNByteLast("/var/glx/weblog/phim/video_not_found.log", "500");
+            echo "<pre>";
+            print_r($ret);
+            echo "</pre>";
+            ?>
+
+            <br>
+
+
+
+            <br><br>
+
+            - Test CMS daily report:
+
+            <br><br>
+            - Kiểm tra all tập trùng:
+            <br><br>
+            - Scan all tập trùng id (bilu):
+            <br><br>
+
+
+
+            <?php
+        }
+
+
+    ?>
+
+    <div class="box box-primary">
+        <div class="box-header with-border">
+            <h3 class="box-title">Convert ts to mp4 log: </h3>
+        </div><!-- /.box-header -->
+        <?php
+        $logFile = "/var/glx/weblog/phim/convert_ts.log";
+        $lastIndexInfo = CFile::getNByteLast($logFile , 2000);
+
+        echo "<textarea class='info1'>$lastIndexInfo";
+        echo "</textarea>";
+        ?>
+    </div>
+
+
+    <div class="box box-primary">
+        <div class="box-header with-border">
+            <h3 class="box-title">BlockIPList: </h3>
+        </div><!-- /.box-header -->
+        <?php
+
+        $ipFileBlock = "/var/glx/weblog/block_ip.txt";
+        $cont = '';
+        if(file_exists($ipFileBlock)){
+            $cont = file_get_contents($ipFileBlock);
+
+            $mm = file($ipFileBlock);
+            echo "\n countIPlist: " . count($mm);
+            $m1 = [];
+            //unlink($ipFileBlock);
+            foreach ($mm AS $stt =>$ip){
+                $ip = trim($ip);
+                $stt = trim($stt);
+                if(!$ip || !$stt)
+                    continue;
+                if(!isset($m1[$ip]))
+                    $m1[$ip] = 0;
+                $m1[$ip]++;
+                //if($m1[$ip] == 1)
+                //output($ipFileBlock, $ip);
+            }
+            //echo "\n countM1: " . count($m1);
+        }
+        echo "<textarea class='info1' id='ipListBlock' style='height: 100px;'>$cont";
+        echo "</textarea>";
+        ?>
+        <button class="btn btn-info" onclick="saveIPList()">SAVE</button>
+    </div>
+
+</section>
+<!-- /.content -->
+<script>
+    $(document).ready(function(){
+        var $textarea = $('.info1');
+        $textarea.scrollTop($textarea[0].scrollHeight);
+    });
+
+
+    function saveIPList() {
+        var text1 = $('#ipListBlock').val();
+        //alert("Text = " + text1);
+
+        var data = {};
+        data['ip_list'] = text1;
+        var urlPost = "/a_p_i/admin/save-ip-block-list";
+        $.post(urlPost, data, function(result){
+
+            if(result.indexOf('no_change_ip_list') != -1){
+                showToastWarningTop("NO THING CHANGE!");
+                return;
+            }
+
+            if(result.indexOf('done_change_ip_list') != -1){
+                showToastInfoTop("DONE!");
+            }
+            else{
+                console.log(" Error1 = " + JSON.stringify(result));
+                alert("Error: " + result);
+            }
+
+
+        });
+
+    }
+
+
+</script>

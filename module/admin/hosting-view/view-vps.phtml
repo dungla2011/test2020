@@ -1,0 +1,180 @@
+<link rel="stylesheet"
+      href="/public/css/table_mng.css?v=<?php echo filemtime('/var/www/galaxycloud/public/css/table_mng.css') ?>">
+
+
+<style>
+    .divTable{
+        max-width: 600px;
+    }
+    .edit_form{
+        display: -moz-box;
+        display: -webkit-box;
+        display: -webkit-flex;
+        display: -ms-flexbox;
+        display: flex;
+        -moz-box-orient: vertical;
+        -webkit-box-orient: vertical;
+        -webkit-flex-flow: column;
+        -ms-flex-direction: column;
+        flex-flow: column;
+    }
+    .tbl-data{
+        order: 1;
+    }
+    .div_item_s13{
+        order: 3;
+    }
+    .div_item_s19{
+        order: 2;
+    }
+</style>
+
+<?php
+$apiUrl = "/a_p_i/admin-vps-list";
+
+$params = \Base\ClassRoute::getArrParams();
+
+if (!isset($params['id'])) {
+    bl("Not valid itemid?");
+    return;
+}
+
+$id = $params['id'];
+
+if (!is_numeric($id)) {
+    bl("Not valid itemid?");
+    return;
+}
+
+
+$linkV = '/admin/hosting/list-vps2';
+clsDbTableMng::setAllowSaveButtonOnEdit(1);
+
+
+?>
+
+<!-- Content Header (Page header) -->
+<section class="content-header">
+    <h1>
+
+        <a href="<?php
+        echo $linkV;
+        ?>">
+            ListVPS
+        </a>
+        <small> VM-ID: <?php
+        echo $id;
+        ?>
+        </small>
+    </h1>
+
+</section>
+
+<!-- Main content -->
+<section class="content">
+
+    <?php
+
+    $params = \Base\ClassRoute::getArrParams();
+    clsDbTableMng::$gidCurrent = getCurrentGid();
+    clsDbTableMng::$class = \Base\modelHostingVps::class;
+
+
+    $file = "/var/ufile_cms2017LAD/vsphere-automation-sdk-java/test1";
+
+    $un = getUserVcFromFile($file)[0];
+    $pw = getUserVcFromFile($file)[1];
+
+    $domain = "vc.glx";
+
+    ClassVMwareTool::getLoginAndSetCookieFileVCenter($domain, $un, $pw);
+
+    $id = $params['id'];
+    $vps = clsDbTableMng::showEditForm($id);
+    if($vps instanceof \Base\modelHostingVps);
+
+    $vid = $vps->vmId;
+
+
+    $randId = qqgetRandFromId($id);
+
+    ?>
+    <?php
+    _END:
+
+
+    $strConsole = "<a title='Open console Vps' target='_blank' href='' onclick=\"window.open('/member/hosting/console/vid/$randId', 
+                         'newwindow$vid', 
+                         'toolbar=no, menubar=no, resizable=yes,width=1024,height=750'); 
+              return false;\"> <button> Console </button>  </a> ";
+
+    ?>
+
+
+        <?php
+        echo $strConsole;
+        ?>
+
+
+
+
+</section>
+
+<script src="/application/_js/table_mng.js?v=<?php echo filemtime('/var/www/galaxycloud/application/_js/table_mng.js') ?>"></script>
+<script>
+    clsDataTblMng.apiUrl = '<?php echo $apiUrl?>';
+</script>
+
+<?php
+if(isAdmin_()){
+    $vps->getOneId($id);
+    echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+    print_r($vps);
+    echo "</pre>";
+}
+
+?>
+
+
+<script>
+
+    tinymce.init({
+        selector: '#to_update_<?php echo $id ?>-comment',
+        plugins: [
+            "anchor autolink codesample colorpicker contextmenu fullscreen help image imagetools",
+            " paste code lists link media noneditable preview",
+            " searchreplace table template textcolor visualblocks wordcount"
+        ], //removed:  charmap insertdatetime print
+        entity_encoding : "raw",
+        image_title: true,
+        automatic_uploads: true,
+        file_picker_types: 'image',
+        paste_data_images: true,
+        image_class_list: [
+            {title: 'Responsive', value: 'img-responsive'}
+        ],
+        //toolbar: "sizeselect | bold italic | fontselect |  fontsizeselect | align | forecolor backcolor link image",
+        toolbar:
+            "insertfile a11ycheck undo redo paste | fontselect sizeselect fontsizeselect bold italic | forecolor backcolor | template codesample | alignleft aligncenter alignright alignjustify | bullist numlist | link image media",
+        file_picker_callback: function (cb, value, meta) {
+            var input = document.createElement('input');
+            input.setAttribute('type', 'file');
+            input.setAttribute('accept', 'image/*');
+            input.onchange = function () {
+                var file = this.files[0];
+                var reader = new FileReader();
+
+                reader.onload = function () {
+                    var id = 'blobid' + (new Date()).getTime();
+                    var blobCache = tinymce.activeEditor.editorUpload.blobCache;
+                    var base64 = reader.result.split(',')[1];
+                    var blobInfo = blobCache.create(id, file, base64);
+                    blobCache.add(blobInfo);
+                    cb(blobInfo.blobUri(), {title: file.name});
+                };
+                reader.readAsDataURL(file);
+            };
+            input.click();
+        }
+    });
+</script>

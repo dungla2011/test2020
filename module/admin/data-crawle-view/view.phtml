@@ -1,0 +1,44 @@
+<?php
+$params = \Base\ClassRoute::getArrParams();
+
+$obj = new \Base\ModelDataLink();
+$urlBase = "/a_p_i/member-data-link";
+//\Base\ClassRoute::$arrParams['sortField'] = 'createdAt';
+//\Base\ClassRoute::$arrParams['sortType'] = 'DESC';
+$module = \Base\ClassRoute::getCurrentModule();
+$controller = \Base\ClassRoute::getCurrentController();
+$act = \Base\ClassRoute::getCurrentAction();
+?>
+<section class="content-header">
+    <h1>
+
+        <a href="<?php
+        echo "/$module/$controller/$act";
+        ?>">
+            DataLinkList
+        </a>
+    </h1>
+</section>
+<!-- Main content -->
+<section class="content">
+    <?php
+
+    if(isset($params['id'])){
+
+        $id = $params['id'];
+
+        $obj = new \Base\ModelDataLink($id);
+
+        if(!isset($obj->id)){
+            bl("Not found this id?");
+        }
+        else {
+            echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+            print_r($obj);
+            echo "</pre>";
+        }
+    }
+
+
+    ?>
+</section>

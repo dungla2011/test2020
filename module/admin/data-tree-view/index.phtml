@@ -1,0 +1,46 @@
+<section style="">
+ <div style="display: inline-block; padding: 3px 5px; border: 1px solid gray; margin: 3px;"> Tree List - Cây phân loại </div>
+
+<?php
+\Base\ClassUploadSetting::$moduleUploadNow = 'data#';
+//require_once (\Base\ClassRoute::$rootDirApp."/application/block/upload_block.php");
+?>
+<script>
+    var urlBaseApiTree = "/a_p_i/member-data";
+    var modulePublicTree = "data";
+
+    //Setting view right tree as grid/table by default:
+    var viewAsDefaultGridOrTable = 'table'; //'table' 'grid'
+
+    function doneUploadFile(data) {
+        //alert("Upload done!");
+        console.log(" doneUploadFile data = " + JSON.stringify(data.payload));
+
+        if(!ClassApi.checkReturnApi(data)){
+            alert("Not valid return API after upload done? " + data);
+            return;
+        }
+
+//            var ret = (data.payload[0]);
+//
+//            if(ret.filename && ret.id_cloud){
+//                console.log(" ret.filename && ret.id_cloud = " + ret.filename + " / " + ret.id_cloud);
+//            }
+        //ReUpdate
+
+        var scope = angular.element($("#main_id_div_tree")).scope();
+        scope.loadItemsRight(JSON.parse(sessionStorage.getItem("ngStorage-currentRightItem" + urlBaseApiTree)));
+    }
+
+    function setCurrentFolderIdForExtraTask(id){
+        if(typeof uploadObj != 'undefined' && uploadObj)
+            uploadObj.update({formData: {folderModuleToUpload: id, uploadModule: 'data_module_upload' }});
+    }
+</script>
+<?php
+
+require_once (\Base\ClassRoute::$rootDirApp."/application/block/tree_block.php");
+
+?>
+
+</section>

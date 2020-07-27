@@ -1,0 +1,101 @@
+<?php
+
+/* 
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+namespace AdminModule;
+
+use Base\ClassDBConnect;
+use Base\ModelUserCms;
+use Base\clsValidate;
+use Base\ModelDemoViDu;
+use Base\CReturnError;
+use Base\ClassRoute;
+use Base\ClassString;
+use Base\ClassController;
+
+class CmsGroupController extends ClassController
+{
+
+    function __construct()
+    {
+        parent::__construct();
+        $this->controllerFilePath = __FILE__;
+        $this->templateName = "admin1";
+        $this->templateLayoutFile = "index_admin.htm";
+        $this->folderViewOfAction = "";
+        $this->title = "Group management";
+    }
+
+    function indexAction($paramInput = null)
+    {
+        //echo "<br/> AdminCmsUser:index ".__FUNCTION__;
+        $params = ClassRoute::$arrParams;
+
+        $viewFile = $this->getFileViewPath(__FUNCTION__);
+        if (!file_exists($viewFile)) {
+            echo("Not found View File?" . $viewFile);
+        } else
+            require_once $viewFile;
+    }
+
+    function addAction($retVal = 0)
+    {
+        $this->loadViewFile(__FUNCTION__);
+    }
+
+    function saveAction()
+    {
+
+        $params = ClassRoute::$arrParams;
+
+
+    }
+
+    function deleteAction()
+    {
+
+        $params = ClassRoute::$arrParams;
+        if (isset(qqCheckIdRandValid['id']) && qqCheckIdRandValid($params['id'])) {
+
+        } else
+            rtErrorApi("Not valid ID to delete? ");
+    }
+
+    function unDeleteAction()
+    {
+
+        $params = ClassRoute::$arrParams;
+        if (isset($params['id']) && qqCheckIdRandValid($params['id'])) {
+
+        } else
+            rtErrorApi("Not valid ID to un-delete? ");
+    }
+
+
+    function multiDeleteAction()
+    {
+
+        $params = ClassRoute::$arrParams;
+
+
+    }
+
+    function multiUndeleteAction()
+    {
+
+        $params = ClassRoute::$arrParams;
+
+
+    }
+
+    function changeStatusAction()
+    {
+        $params = ClassRoute::$arrParams;
+
+    }
+
+
+}

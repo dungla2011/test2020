@@ -1,0 +1,85 @@
+<?php
+if(!$obj){
+    echo "<br/><br/><br/><br/>";
+    baoloi("Not object to edit?");
+    return;
+}
+?>
+
+<?php
+require_once "application/block/upload_image_clipboard.php";
+?>
+
+
+<div class="content" style="margin: auto; max-width: 900px">
+    <div class="jumbotron">
+
+        Public link: <b> <a target="_blank" href="/<?php echo $obj->getLinkFriendlyUrl("news") ?>"> PUBLIC </a>
+        <br/>
+        Title of news: <b> <?php echo $obj->name ?> </b>
+        <br/>
+        Content:
+        <br/>
+        <button class="form-control btn btn-success" onclick="saveContentNews()">Save</button>
+        <textarea cols="80" id="editor1" name="editor1"><?php echo $content; ?>	</textarea>
+        <button class="form-control btn btn-success" onclick="saveContentNews()">Save</button>
+
+    </div>
+</div>
+
+
+<script>
+
+
+</script>
+
+<script>
+    CKEDITOR.replace('editor1');
+    CKEDITOR.config.enterMode = CKEDITOR.ENTER_BR;
+    CKEDITOR.config.autoParagraph = false;
+    CKEDITOR.config.height = 500;
+    CKEDITOR.config.width = 'auto';
+    CKEDITOR.config.allowedContent = true;
+    CKEDITOR.config.entities = false;
+    CKEDITOR.config.entities_greek = false;
+    CKEDITOR.config.entities_latin = false;
+    CKEDITOR.config.htmlEncodeOutput = false;
+    //CKEDITOR.config.jsplus_include_css={'<?php echo \Base\ClassRoute::getBaseUri()?>/template/public1/css/bootstrap.css'};
+    CKEDITOR.config.contentsCss = '<?php echo \Base\ClassRoute::getBaseUri()?>/template/public1/css/bootstrap.css';
+
+    //CKEDITOR.config.jsplus_include_js={'/path3/js2.js',''};
+
+    //var idCKE = "news_content_" + record.id;
+    //CKEDITOR.instances[idCKE].setData(record.content);
+
+    function saveContentNews() {
+
+        var cont = CKEDITOR.instances['editor1'].getData();
+        console.log("cont = " + cont);
+
+        var url = gBaseUrl + 'a_p_i/news/save';
+        $.post(url,
+            {
+                id: '<?php echo $params['id'];?>',
+                content: cont,
+            },
+            function (data, status) {
+                if (!ClassApi.checkReturnApi(data)) {
+                    alert("Có lỗi save Item!");
+                    return;
+                }
+                else {
+
+                    if(data.payload == 0){
+                        showToastWarningBottom("Không có thay đổi?");
+                    }
+                    else
+                        showToastInfoBottom("Cập nhật thành công");
+//                    toastr.info('Save thành công');
+                    //toastr.success('Save thành công', '', {timeOut: 2000})
+                    //alert("Save thành công!");
+                }
+            });
+    }
+</script>
+

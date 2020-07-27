@@ -1,0 +1,449 @@
+<!-- Content Header (Page header) -->
+<section class="content-header">
+    <h1>
+        ManagerServerVps
+        <small>Index</small>
+    </h1>
+    <ol class="breadcrumb">
+        <li><a href="#"><i class="fa fa-dashboard"></i> Home</a></li>
+
+    </ol>
+</section>
+
+<style>
+    tr, td {
+        padding: 2px 5px;
+    }
+    form, button {
+        margin: 2px;
+    }
+
+</style>
+
+<!-- Main content -->
+<section class="content" ng-controller="member_hosting_bill_index">
+
+    <?php
+    $params = \Base\ClassRoute::getArrParams();
+
+    $isAdminUrl = 0;
+    $action = \Base\ClassRoute::getFullAction();
+    if($action == 'admin/hosting/list-vps'){
+        $isAdminUrl = 1;
+    }
+
+    $uid = getCurrentUserId();
+
+    $folder = USER_FILE_UPLOAD_LOCATION . "/server_mng_user/";
+    if(!file_exists($folder)){
+        mkdir($folder);
+    }
+    if(!file_exists($folder)){
+        bl("Error: can not create folder!");
+        goto END__;
+    }
+
+    $userFileLog = $folder."/$uid.log";
+
+    $update_now = 0;
+    if(isset($params['update_now']))
+        $update_now = 1;
+
+    if(isset($params['view-history'])){
+
+        echo " <a href='/member/hosting-bill/manage-server'><button>RETURN</button></a>";
+        if(file_exists($userFileLog)) {
+            $cont = file_get_contents($userFileLog);
+            echo "<pre>";
+            print_r($cont);
+            echo "</pre>";
+        }
+        else{
+            echo "<br/>";
+            echo ("No operations in history!");
+        }
+
+        goto END__;
+
+    }
+
+
+
+//    echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+//    print_r($params);
+//    echo "</pre>";
+
+    class vmInfo{
+        var $vmId;
+        var $vmName;
+        var $cpuCount;
+        var $memorySizeMiB;
+        var $powerState;
+    }
+
+//reset_vm
+//power_off_vm
+//power_on_vm
+//
+//make_off_nic
+//make_reset_nic
+//make_on_nic
+//
+//vm_id
+//vm_name
+
+
+    //$serverIp = eth1b("103.35.64.60");
+
+    $arrVmUser = [];
+    if(!$isAdminUrl) {
+        $bill = new \Base\ModelBillHosting();
+        $uid = getCurrentUserId();
+        $arr = $bill->getArrayWhereSql_("userid = $uid AND delete_date IS NULL");
+
+        if (!$arr) {
+            bl("Not found any server in your account?");
+            goto END__;
+        }
+
+        foreach ($arr AS $bill){
+            $server_name = $bill->server_name;
+            $server_id = $bill->server_id;
+            $arrVmUser[$server_id] = $server_name;
+        }
+
+        if(count($arrVmUser) == 0){
+            bl(" You have not any server ?");
+            goto  END__;
+        }
+    }
+
+
+
+
+    //neeus co cmd:
+    if(isset($params['vm_id']) && isset($params['vm_name'])){
+        $cmd = "";
+        $vm_id = $params['vm_id'];
+        $vm_name = $params['vm_name'];
+
+        echo "<br/>VM: $vm_id / $vm_name";
+
+        //Check VMname/ID of user:
+
+        if(!$isAdminUrl)
+        if(count($arrVmUser)){
+            if(!isset($arrVmUser[$vm_id]) || $arrVmUser[$vm_id]!==$vm_name){
+                bl("Not valid server info? $vm_id / $vm_name");
+                goto END__;
+            }
+        }
+        else{
+            bl("Not found VPS?");
+            goto END__;
+        }
+
+        if(isset($params['power_on_vm'])){
+            echo "<br/> power_on_vm";
+            $cmd = "cd /var/ufile_cms2017LAD/vsphere-automation-sdk-java && java -ea -cp target/vsphere-samples-6.7.1.jar vmware.samples.vcenter.vm.power.PowerLad --config-file /var/ufile_cms2017LAD/vsphere-automation-sdk-java/test1 --server 10.0.0.166 --skip-server-verification --vmid=$vm_id --cmd=on";
+        }
+
+        if(isset($params['power_off_vm'])){
+            echo "<br/> power_off_vm";
+            $cmd = "cd /var/ufile_cms2017LAD/vsphere-automation-sdk-java && java -ea -cp target/vsphere-samples-6.7.1.jar vmware.samples.vcenter.vm.power.PowerLad --config-file /var/ufile_cms2017LAD/vsphere-automation-sdk-java/test1 --server 10.0.0.166 --skip-server-verification --vmid=$vm_id --cmd=off";
+        }
+
+        if(isset($params['reset_vm'])){
+            echo "<br/> reset_vm";
+            $cmd = "cd /var/ufile_cms2017LAD/vsphere-automation-sdk-java && java -ea -cp target/vsphere-samples-6.7.1.jar vmware.samples.vcenter.vm.power.PowerLad --config-file /var/ufile_cms2017LAD/vsphere-automation-sdk-java/test1 --server 10.0.0.166 --skip-server-verification --vmid=$vm_id --cmd=reset";
+        }
+
+        if(isset($params['make_on_nic'])){
+            $nicLabel = $params['make_on_nic'];
+            $cmd = "cd /var/ufile_cms2017LAD/vsphere-automation-sdk-java && java -ea -cp target/vsphere-samples-6.7.1.jar vmware.samples.vcenter.vm.hardware.ethernet.LadRestartNic --config-file /var/ufile_cms2017LAD/vsphere-automation-sdk-java/test1 --server 10.0.0.166 --skip-server-verification --datacenter=galaxy --standardportgroup='VM Network' --distributedportgroup='VM Network' --vmid=$vm_id --vmname='$vm_name' --nicLabel='$nicLabel' --cmd=on";
+            echo "<br/> make_on_nic '$nicLabel'";
+        }
+
+        if(isset($params['make_off_nic'])){
+            $nicLabel = $params['make_off_nic'];
+            $cmd = "cd /var/ufile_cms2017LAD/vsphere-automation-sdk-java && java -ea -cp target/vsphere-samples-6.7.1.jar vmware.samples.vcenter.vm.hardware.ethernet.LadRestartNic --config-file /var/ufile_cms2017LAD/vsphere-automation-sdk-java/test1 --server 10.0.0.166 --skip-server-verification --datacenter=galaxy --standardportgroup='VM Network' --distributedportgroup='VM Network' --vmid=$vm_id --vmname='$vm_name' --nicLabel='$nicLabel' --cmd=off";
+            echo "<br/> make_off_nic '$nicLabel'";
+        }
+
+        if(isset($params['make_reset_nic'])){
+            $nicLabel = $params['make_reset_nic'];
+            $cmd = "cd /var/ufile_cms2017LAD/vsphere-automation-sdk-java && java -ea -cp target/vsphere-samples-6.7.1.jar vmware.samples.vcenter.vm.hardware.ethernet.LadRestartNic --config-file /var/ufile_cms2017LAD/vsphere-automation-sdk-java/test1 --server 10.0.0.166 --skip-server-verification --datacenter=galaxy --standardportgroup='VM Network' --distributedportgroup='VM Network' --vmid=$vm_id --vmname='$vm_name' --nicLabel='$nicLabel' --cmd=reset";
+            echo "<br/> make_reset_nic '$nicLabel'";
+        }
+
+        if(strstr($cmd, "rm ")){
+            die("Not allow rm cmd? ($cmd)");
+        }
+        if(strstr($cmd, "mv ")){
+            die("Not allow mv cmd? ($cmd)");
+        }
+
+        if($cmd) {
+
+            echo "<pre>";
+            $ret = shell_exec($cmd);
+            echo $ret;
+            echo "</pre>";
+
+            $tmp = serialize($params);
+            $mail = getCurrentUserEmail();
+            outputT($userFileLog , "User: $mail ($uid),  $vm_id / , $vm_name \ncmd=$tmp   \nRET = $ret");
+        }
+    }
+
+
+    $bill = new \Base\ModelBillHosting();
+
+    $arr = $bill->getArrayWhereSql_("userid = $uid AND delete_date IS NULL");
+
+    if(!$arr){
+        bl("Not found any server in your account?");
+    }
+
+
+    $arrVM = [];
+    //$ret = shell_exec($cmd);
+    $vmInfoFile = "/share/vm_info_tmp1";
+
+    if(!file_exists($vmInfoFile)){
+        bl("Error, not found fileinfo?");
+        goto END__;
+    }
+
+    $ret = file_get_contents($vmInfoFile);
+
+    if(!strstr($ret, "_END_TASK_")){
+        sleep(2);
+        $ret = file_get_contents($vmInfoFile);
+    }
+
+    if(!strstr($ret, "_END_TASK_")){
+        bl("Not found infomation???");
+        goto END__;
+    }
+
+    $dtimeUpdate = time() - filemtime($vmInfoFile);
+    $strT = "";
+    if($dtimeUpdate > 30){
+        $strT = " [<span style='color: red'> Last status will be updated after ~1 minute, F5 to refresh!</span>]";
+    }
+
+    echo "<br/>LastUpdate: ". nowyh(filemtime($vmInfoFile)) . " - <b>".($dtimeUpdate) . "</b> seconds $strT";
+    //echo "<br/>(Note: sometime need Refresh (F5) to update new status!)";
+
+    if(isAdmin_()) {
+        ?>
+
+        <form method="post" action="">
+            <button type="submit" name="update_now"> Update Changes</button>
+        </form>
+
+        <?php
+    }
+
+    echo "<br/>";
+//    echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+//    print_r($ret);
+//    echo "</pre>";
+
+    echo "<div style='overflow-x: scroll'>";
+
+    if(strstr($ret, "_END_TASK_")){
+
+        echo "<table class='glx03'>";
+
+        echo "<tr>";
+        echo "<th>Count</th>";
+        echo "<th>ID</th>";
+        echo "<th>Name</th>";
+        echo "<th>CPU Count</th>";
+        echo "<th>Memory</th>";
+        echo "<th>Power state</th>";
+        echo "<th>Network</th>";
+
+        echo "</tr>";
+        $arr = explode("\n",$ret);
+        $count = 0;
+        foreach ($arr as $line) {
+            $line = trim($line);
+            if(strstr($line, "GSON_VM_INFO=")){
+                $strJson = substr($line,strlen('GSON_VM_INFO='));
+                $obj = json_decode($strJson);
+                if($obj) {
+
+                    $vm = new vmInfo();
+                    $vm->vmName = $obj->name;
+                    $vm->vmId = $obj->vm;
+
+                    if(!$isAdminUrl)
+                    if(!isset($arrVmUser[$vm->vmId]) || $arrVmUser[$vm->vmId] != $vm->vmName){
+//                        bl(" not found: $vm->vmName");
+                        continue;
+                    }
+
+                    $padUID = " userid = $uid AND ";
+                    if($isAdminUrl){
+                        $padUID = '';
+                    }
+
+
+                    $notFoundBill = "";
+                    $objBill = new \Base\ModelBillHosting();
+                    if(!$objBill->getOneWhereSql(" $padUID server_name = '$obj->name'")){
+                        if(!$isAdminUrl) {
+                            bl("Error: not found bill???" . MysqliDb::getInstance()->getLastQuery());
+                        }
+                        $notFoundBill = "<br><span style='color: red'>NOT FOUND: $obj->name IN Db</span>";
+                    }
+                    else{
+
+                        $objUpdate = new \Base\ModelBillHosting();
+
+                        if($objBill->server_id!=$obj->vm) {
+                            if($update_now) {
+                                $objUpdate->server_id = $obj->vm;
+                                $objUpdate->updateDbMe(" id = $objBill->id");
+                            }
+                            echo "<br/> Need update vmid for '$obj->name': '$objBill->server_id!=$obj->vm'";
+                        }
+                        else{
+                            //echo "<br/> Not update $obj->vm ";
+                        }
+
+                        $strProd = "$obj->cpuCount-Core/$obj->memorySizeMiB-MB";
+
+                        if($objBill->product_name != $strProd){
+                            if($update_now) {
+                                $objUpdate->product_name = $strProd;
+                                $objUpdate->updateDbMe(" id = $objBill->id");
+                            }
+                            echo "<br/> Need update product_name?  '$objBill->product_name' != '$strProd' ";
+                        }
+
+
+                    }
+
+                    $count++;
+
+                    if($obj->powerState->name == 'POWERED_ON')
+                        $vm->powerState = 1;
+                    if($obj->powerState->name == 'POWERED_OFF')
+                        $vm->powerState = 0;
+
+                    $vm->cpuCount = $obj->cpuCount;
+                    $vm->memorySizeMiB = $obj->memorySizeMiB;
+//                    echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+//                    print_r($obj);
+//                    echo "</pre>";
+
+//                    echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+//                    print_r($vm);
+//                    echo "</pre>";
+                    $strInput = " <input type='hidden' name='vm_id' value='$vm->vmId'> <input type='hidden' name='vm_name' value='$vm->vmName'> ";
+
+                    echo "<tr>";
+                    echo "<td style='text-align: center'> $count </td>";
+                    echo "<td> $vm->vmId </td>";
+                    if(isset($objBill->server_ip))
+                        $ipSv = $objBill->server_ip;
+                    else
+                        $ipSv = ' NOT UPDATE';
+                    echo "<td> $vm->vmName <em> $notFoundBill  <br/> IP: $ipSv </em></td>";
+
+                    echo "<td  style='text-align: center'> $vm->cpuCount </td>";
+                    echo "<td> $vm->memorySizeMiB MB</td>";
+
+                    echo "<td>";
+                    if($obj->powerState->name == 'POWERED_ON') {
+                        echo "<div style='text-align: center; margin: auto;background-color: green; height: 20px; width: 30px; color: white; border-radius: 10px'>ON </div>";
+                    }
+                    else {
+                        echo "<div style='text-align: center;margin: auto;background-color: gray; height: 20px; width: 30px; color: white; border-radius: 10px'> OFF </div>";
+                    }
+                    echo " <form  style='display: inline-block' action='' method='post'> $strInput <button type='submit' name='power_on_vm'>POWER-ON</button></form>";
+                    echo "<form style='display: inline-block' action='' method='post'> $strInput <button type='submit' name='power_off_vm'>POWER OFF</button> </form>";
+                    echo "<form  style='display: inline-block' action='' method='post'> $strInput <button name='reset_vm' type='submit'>RESET</button> </form> <br/>";
+
+                    echo " </td>";
+
+
+                    echo "<td>";
+
+
+                    foreach ($arr as $line2) {
+                        if(strstr($line2, "GSON_NIC_INFO_OF_$vm->vmId/No")){
+                            //echo "<br/>$line2";
+                            list($tmp, $json_NIC) = explode("=",$line2);
+                            $json_NIC = trim($json_NIC);
+                            $objNic = json_decode($json_NIC);
+//                                echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+//                                print_r($objNic);
+//                                echo "</pre>";
+                            echo "- Label: <b>$objNic->label </b><br/>";
+                            echo "Mac Address: $objNic->macAddress <br/>";
+
+                            $style = "display: inline-block;  color: white; text-align: center; height: 20px; width: 30px; border-radius: 10px";
+                            if('CONNECTED' == $objNic->state->name) {
+                                echo "Status: <div style='background-color: green; $style'> ON </div> ";
+                            }
+                            else{
+                                echo "Status: <div style='background-color: gray; $style'> OFF</div>";
+                            }
+                            //echo "<br/>";
+                            echo "<form  style='display: inline-block' action='' method='post'> $strInput <button type='submit' name='make_on_nic' value='$objNic->label'>Make ON </button></form>";
+                            echo "<form  style='display: inline-block' action='' method='post'> $strInput <button type='submit' name='make_off_nic' value='$objNic->label'>Make OFF</button> </form>";
+                            echo "<form  style='display: inline-block'  action='' method='post'> $strInput <button name='make_reset_nic' type='submit' value='$objNic->label'>Reset</button> </form> ";
+                            echo "<br/>";
+
+                        }
+                    }
+
+                    echo "</td>";
+                    echo "</tr>";
+
+                }
+                else{
+                    echo "<br/>*** Error, can not decode str: '$line'";
+                }
+            }
+        }
+
+        echo "</table><br/>";
+    }
+    else{
+        bl("Some error, DEBUG: ");
+    }
+
+    echo "</div>";
+
+    echo "<a href='/member/hosting-bill/manage-server/view-history/1'> <button>Your Operation History</button> </a>";
+
+    if(isAdmin_()) {
+        echo " <hr><button onclick='clickDebugInfo()'>VIEW DEBUG INFO</button> <br/> <pre style='display: none' id='debug_info_123'>";
+        echo $ret;
+        echo "</pre>";
+    }
+
+
+    //    outputT(USER_FILE_UPLOAD_LOCATION."/server_mng_user.log", "UID:$uid, Restart network , RET = $ret");
+
+    ?>
+    <?php
+        END__:
+    ?>
+
+</section>
+<script>
+
+    function clickDebugInfo(){
+        $("#debug_info_123").toggle();
+    }
+
+</script>
+<!-- /.content -->
+<!-- Main content -->

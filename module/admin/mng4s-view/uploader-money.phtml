@@ -1,0 +1,401 @@
+<?php
+$u = getCurrentUsername();
+$obj = new ClassUploader();
+
+//$obj = new \Base\ModelCloudFile();
+$urlBase = "/a_p_i/admin-uploader";
+$current_module = $module = \Base\ClassRoute::getCurrentModule();
+$current_controller = $controller = \Base\ClassRoute::getCurrentController();
+$current_action = $act = \Base\ClassRoute::getCurrentAction();
+?>
+
+<!-- Content Header (Page header) -->
+<section class="content-header">
+    <h1>
+
+        <a href="<?php
+        echo "/$module/$controller/$act";
+        ?>">
+            UploaderList
+        </a>
+        <small>list</small>
+    </h1>
+</section>
+
+<!-- Main content -->
+
+
+<section class="content">
+
+
+    <?php
+
+    $db = MysqliDb::getInstance();
+
+
+    function cmpUploaderPoint1(array $a, array $b) {
+
+        if ($a['sumGoldBW'] > $b['sumGoldBW']) {
+            return -1;
+        } else if ($a['sumGoldBW'] < $b['sumGoldBW']) {
+            return 1;
+        } else {
+            return 0;
+        }
+    }
+
+    /*
+      Thay the tuy theo ung dung:
+      Demo_Model_ViduTable
+      ClassMoneyUploader
+      ClassFilterMoneyUploader
+     */
+
+    ////////////////////////////////
+    //1. Các Code cơ bản chung:
+    $params = \Base\ClassRoute::getArrParams();
+    $baseUrl = "";
+
+    //Không Tính gold/tiền tháng hiện tại
+    echo "<form method='post' action=''>";
+
+    $arrMonth = ClassDateTime::ListMonthBetWeenDate('2014-07');
+
+    $fromMonth = $arrMonth[0];
+    $toMonth = $arrMonth[count($arrMonth) - 2];
+
+    if (isset($params['fromMonth'])) {
+
+        $fromMonth = $params['fromMonth'];
+        $toMonth = $params['toMonth'];
+
+        if ($fromMonth < '2014-07' || $fromMonth > nowm()) {
+            bl("From month phải từ '2014-07' đến hiện tại");
+            return;
+        }
+
+        if ($toMonth < '2014-07' || $toMonth > nowm()) {
+            bl("To month phải từ '2014-07' đến hiện tại");
+            return;
+        }
+        if ($fromMonth > $toMonth) {
+            bl("To month phải lớn hơn toMonth");
+            return;
+        }
+    }
+
+
+    $selectMonth = "<select name='fromMonth'>";
+    for ($i = 0; $i < count($arrMonth); $i++) {
+
+        $month = $arrMonth[$i];
+        if ($month == $fromMonth)
+            $selectMonth .= "<option value='$month' selected> $month  </option>";
+        else
+            $selectMonth .= "<option value='$month'> $month  </option>";
+    }
+
+    $selectMonth .= "</select>";
+
+    echo "Từ tháng: $selectMonth";
+
+    $selectMonth = "<select name='toMonth'>";
+    for ($i = 0; $i < count($arrMonth); $i++) {
+
+        $month = $arrMonth[$i];
+        if ($month == $toMonth)
+            $selectMonth .= "<option value='$month' selected> $month  </option>";
+        else
+            $selectMonth .= "<option value='$month'> $month  </option>";
+    }
+
+    $selectMonth .= "</select>";
+    echo "Đến tháng:  $selectMonth";
+
+
+    $thisMonthPad = " AND month < '" . nowm() . "'";
+
+    echo "<input type='submit' >";
+    echo "</form>";
+
+    function getUserGoldMonth($fromMonth, $toMonth, $DEF_GOLD_VND){
+        $db = MysqliDb::getInstance();
+
+        /////////////////////////////
+        $sql = "        
+            (SELECT goldT.userid AS userid, goldT.sumGoldBW AS sumGoldBW, goldT.sumGoldCount AS sumGoldCount, goldT.sumGoldBW * $DEF_GOLD_VND AS sumMoneyPhaiTraBW, sumGoldCount * $DEF_GOLD_VND AS sumMoneyPhaiTraGC, moneyT.sumMoneyDaTra AS sumMoneyDaTra FROM 
+                    (SELECT userid, sum(GREATEST(goldBW,goldCount)) AS sumGoldBW, sum(goldCount) AS sumGoldCount FROM  tbl_user_point WHERE  month >= '$fromMonth' AND month <= '$toMonth' AND goldBW > 0 GROUP BY userid ) goldT 
+                    LEFT JOIN 
+                    (SELECT userid, sum(money) AS sumMoneyDaTra  FROM tbl_mon WHERE delete_date = '' GROUP BY userid) moneyT
+                    ON  goldT.userid = moneyT.userid)
+             ";
+
+        if($DEF_GOLD_VND == DEF_GOLD_VND)
+            echo "<span style='font-size: x-small'> SQL = $sql </span>";
+
+        $result = $db->rawQuery($sql);
+
+//        echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+//        print_r($result);
+//        echo "</pre>";
+//
+//        return;
+
+//        $result = mysql_query($sql);
+//        if (!$result) {
+//            die("Error db: $sql/" . mysql_error());
+//        }
+//
+        $nRow = count($result);
+
+
+        $arrUserGold = array();
+        //while ($row = mysql_fetch_array($result)) {
+        foreach ($result AS $row){
+//
+//            //help4share
+//            if (DEF_FAKE_01 == 1) {
+//                if ($row[0] == 241228) {
+//                    $row['sumGoldBW'] = round($row['sumGoldBW'] * 1.5);
+//                    $row['sumMoneyPhaiTraBW'] = round($row['sumMoneyPhaiTraBW'] * 1.5);
+//                    //$row['sumMoneyDaTra'] = $row['sumMoneyDaTra'] * 2;
+//                }
+//                if ($row[0] == 203684) {
+//                    $row['sumGoldBW'] = round($row['sumGoldBW'] * 1.8);
+//                    $row['sumMoneyPhaiTraBW'] = round($row['sumMoneyPhaiTraBW'] * 1.8);
+//                    //$row['sumMoneyDaTra'] = $row['sumMoneyDaTra'] * 2;
+//                }
+//            }
+
+            $arrUserGold[] = $row;
+        }
+
+        return $arrUserGold;
+    }
+
+
+
+    $arrUserGold1 = getUserGoldMonth($fromMonth, "2017-03", DEF_GOLD_VND);
+
+    $arrUserGold2 = getUserGoldMonth("2017-04", $toMonth, DEF_GOLD_VND_2017);
+
+
+    //echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+    //print_r($arrUserGold1);
+    //echo "</pre>";
+    //echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+    //print_r($arrUserGold2);
+    //echo "</pre>";
+    //return;
+
+    for($i = 0; $i < count($arrUserGold1); $i++){
+        for($j = 0; $j < count($arrUserGold2); $j++)
+            if($arrUserGold1[$i]['userid'] == $arrUserGold2[$j]['userid']){
+                $arrUserGold1[$i]['sumGoldBW'] += $arrUserGold2[$j]['sumGoldBW'];
+                $arrUserGold1[$i]['sumGoldCount'] += $arrUserGold2[$j]['sumGoldCount'];
+                $arrUserGold1[$i]['sumMoneyPhaiTraBW'] += $arrUserGold2[$j]['sumMoneyPhaiTraBW'];
+                $arrUserGold1[$i]['sumMoneyPhaiTraGC'] += $arrUserGold2[$j]['sumMoneyPhaiTraGC'];
+                //$arrUserGold1[$i]['sumMoneyDaTra'] += $arrUserGold2[$j]['sumMoneyDaTra'];
+                break;
+            }
+    }
+
+    $arrUserGold = $arrUserGold1;
+    //echo "<br/> xxx 0";
+
+
+
+    usort($arrUserGold, 'cmpUploaderPoint1');
+
+    //
+    //echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+    //print_r($arrUserGold);
+    //echo "</pre>";
+    //return;
+    //
+    //echo "<br/> xxx 2";
+    $count = 0;
+    $tongPhaiTraTren500K = 0;
+    $tongDaTra = 0;
+
+    function soSanhSapXep1($a, $b) {
+        $conLaiA = $a['sumMoneyDaTra'];
+        $conLaiB = $b['sumMoneyDaTra'];
+        if ($conLaiA == $conLaiB) {
+            return 0;
+        }
+        return ($conLaiA > $conLaiB) ? -1 : 1;
+    }
+
+    function soSanhSapXep2($a, $b) {
+        $conLaiA = $a['sumMoneyPhaiTraBW'] - $a['sumMoneyDaTra'];
+        $conLaiB = $b['sumMoneyPhaiTraBW'] - $b['sumMoneyDaTra'];
+
+        if ($conLaiA == $conLaiB) {
+            return 0;
+        }
+        return ($conLaiA > $conLaiB) ? -1 : 1;
+    }
+
+    function soSanhSapXep3($a, $b) {
+
+        $conLaiA = $a['sumMoneyPhaiTraBW'];
+        $conLaiB = $b['sumMoneyPhaiTraBW'];
+
+        if ($conLaiA == $conLaiB) {
+            return 0;
+        }
+        return ($conLaiA > $conLaiB) ? -1 : 1;
+    }
+
+    $pad1 = $pad2 = $pad3 = '';
+    if ($params['order_by'] == 'da_tra') {
+        usort($arrUserGold, "soSanhSapXep1");
+        $pad1 = "style='text-decoration: underline'";
+    } elseif ($params['order_by'] == 'chua_tra') {
+        usort($arrUserGold, "soSanhSapXep2");
+        $pad2 = "style='text-decoration: underline'";
+    } else {
+        $pad3 = "style='text-decoration: underline'";
+        usort($arrUserGold, "soSanhSapXep3");
+    }
+
+
+    //echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+    //print_r($arrUserGold);
+    //echo "</pre>";
+    //return;
+
+
+    tb("Uploader Money Summary, Thời gian kể từ '$fromMonth' đến '$toMonth' ");
+
+    $fixURI = "/$module/$controller/$current_action";
+    $urlTongTien = $fixURI . "/order_by/tong_tien";
+    $urlDaTra = $fixURI . "/order_by/da_tra";
+    $urlChuaTra = $fixURI . "/order_by/chua_tra";
+
+    echo "<table class='glx03'>";
+    echo "<tr>";
+    echo "<th> STT </th>";
+    echo "<th> Username </th>";
+    echo "<th> Tổng gold tính tiền <br/> (Từ 07-2014)</th>";
+    echo "<th> <a $pad3 href='$urlTongTien'> Tổng tiền dự kiến trả </a></th>";
+    echo "<th> <a $pad1 href='$urlDaTra'> Đã trả <br/>(Tính mọi lần trả) </a></th>";
+    echo "<th> <a $pad2 href='$urlChuaTra'> Còn phải trả </a> </th>";
+    echo "<th style='width: 80px'> Lần trả cuối </th>";
+    if (getCurrentUserId() == 1)
+        echo "<th> Thông tin trả </th>";
+    echo "<th> BankInfo</th>";
+    echo "<th> Comment</th>";
+    echo "</tr>";
+
+    foreach ($arrUserGold AS $row) {
+
+        $userid = $row['userid'];
+        $objUser = new \Base\ModelUserCms();
+
+        $count++;
+
+        $cret = $objUser->getOne("$userid");
+        if(!$cret)
+            continue;
+
+
+        if ($row['sumMoneyPhaiTraBW'] < 300000)
+            continue;
+
+//        echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+//        print_r($row);
+//        echo "</pre>";
+        //if($userid ==  897735)
+        //  echo "<br/> {$row['sumGoldBW']} . {$row['sumGoldCount']}";
+
+        $sumGold = $row['sumGoldBW'] > $row['sumGoldCount'] ? $row['sumGoldBW'] : $row['sumGoldCount'];
+        $sumMoney = $row['sumMoneyDaTra'];
+
+
+        $tongDaTra+= $sumMoney;
+
+        $padChuaThanhToan = "Chưa đủ 500K, chưa thanh toán";
+
+
+
+        echo "<tr>";
+        echo "<td> $count </td>";
+        //echo "<br> $count/$nRow. UID= $userid ($objUser->username) , Gold = $sumGold, đã trả " . number_format($sumMoney) . " /Tổng số " . number_format($sumGold * DEF_GOLD_VND);
+        echo "<td> <a href='/admin/mng4s?username=$objUser->username'> $objUser->username </a></td>";
+        if ($objUser->banned_time > nowyh()) {
+            echo "<td colspan='10'> Error: banned time ($objUser->banned_time): $objUser->banned_reason </td>";
+            echo "</tr>";
+            continue;
+        }
+        /*
+        if ($sumGold * DEF_GOLD_VND < 300000) {
+            continue;
+        } elseif ($sumGold * DEF_GOLD_VND >= 500000) {
+            $tongPhaiTraTren500K+=$sumGold * DEF_GOLD_VND;
+            $padChuaThanhToan = '';
+        }*/
+
+        $tmp1 = $row['sumMoneyPhaiTraBW'] - $row['sumMoneyDaTra'];
+
+        if($row['sumMoneyPhaiTraBW'] >= 500000){
+            $tongPhaiTraTren500K += $row['sumMoneyPhaiTraBW'];
+            $padChuaThanhToan = '';
+        }
+
+
+        echo "<td style='text-align: right'> $sumGold</td>";
+
+        //echo "<td style='text-align: right'> " . number_format($sumGold * DEF_GOLD_VND) . " </td>";
+        echo "<td style='text-align: right'> " . number_format($row['sumMoneyPhaiTraBW']) . " </td>";
+
+        echo "<td style='text-align: right; color: blue'> " . number_format($sumMoney) . " </td>";
+
+        $thongTinTraString = $confirmTra = $lamTron = $thongTinTra = '';
+
+        //if ($sumGold * DEF_GOLD_VND - $sumMoney < 500000)
+        if ($tmp1 < 500000)
+            echo "<td style='text-align: right; color: green'> " . number_format($tmp1) . "</td>";
+        else {
+            echo "<td style='text-align: right; color: red'> " . number_format($tmp1) . " </td>";
+            $lamTron = $tmp1;
+            $lamTron0 = $lamTron = $lamTron - $lamTron % 500000;
+            $lamTron = number_format($lamTron, 0) . " VND ";
+            $today = nowy();
+            $thongTinTraString = "4Share-$objUser->username-$toMonth-$lamTron";
+            $thongTinTra = "<a target='_blank' href='/$module/$controller/pay-money/post_email/$objUser->email/post_money/$lamTron0/post_time_bank/$today/post_mon_info/$thongTinTraString'> OK </a>";
+        }
+
+        $objTmp = new ClassMoneyUploader;
+        if($objTmp->getOneWhere_("userid = $objUser->id AND delete_date < '2000' ORDER BY time DESC")){
+            $tmp1 = substr($objTmp->time, 0, 10);
+            if ($objTmp->time < ClassDateTime::getMonth(-1))
+                echo "<td style='text-align: left'><b>$tmp1</b></td>";
+            else {
+                echo "<td style='text-align: left'>$tmp1</td>";
+            }
+            if (getCurrentUserId() == 1)
+                echo "<td style='text-align: left'> $thongTinTraString - $thongTinTra </td>";
+            echo "<td style='text-align: left'> $objUser->bank_info </td>";
+            echo "<td style='text-align: left'> $padChuaThanhToan </td>";
+            if (getCurrentUserId() == 1)
+                echo "<td style='text-align: left'> $objUser->comment </td>";
+        }
+        echo "</tr>";
+    }
+
+    echo "<tr>";
+    echo "<td> </td>";
+    echo "<td> </td>";
+    echo "<td style='text-align: right; font-weight: bold'> Tổng số </td>";
+    echo "<td style='text-align: right; font-weight: bold'> " . number_format($tongPhaiTraTren500K) . " VNĐ </td>";
+    echo "<td style='text-align: right; font-weight: bold; color: blue'> " . number_format($tongDaTra) . " VNĐ </td>";
+    echo "<td style='text-align: right; font-weight: bold; color: red'> " . number_format($tongPhaiTraTren500K - $tongDaTra) . " VNĐ </td>";
+    echo "<td>  </td>";
+    echo "</tr>";
+
+    echo "</table>";
+    ?>
+
+</section>

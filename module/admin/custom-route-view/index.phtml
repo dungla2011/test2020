@@ -1,0 +1,60 @@
+<!-- Content Header (Page header) -->
+<section class="content-header">
+    <h1>
+        Custom Route
+        <small>list</small>
+    </h1>
+    <ol class="breadcrumb">
+        <li><a href="#"><i class="fa fa-dashboard"></i> Home</a></li>
+        <li class="active">Demo list</li>
+    </ol>
+</section>
+
+<!-- Main content -->
+<section class="content" ng-controller="custom_route_index_view">
+
+    <table class="glx01">
+        <tr>
+            <td>dien-thoai</td>
+            <td>=> inFolder=zx414662</td>
+            <td>dien-thoai([^\-\/].*)</td>
+            <td>=> inFolder=zx414662</td>
+        </tr>
+        <tr>
+            <td>dien-thoai/samsung</td>
+            <td>=> sfilter=221-198</td>
+            <td>dien-thoai/samsung([^\-].*)</td>
+            <td>=>sfilter=221-198</td>
+        </tr>
+    </table>
+
+    <?php
+    require_once "application/block/default_index.php";
+    ?>
+    <?php
+    if(isAdminGroup_()) {
+        ?>
+        <a target="_blank" href="/tool/route/import_custom_route_folder.php">
+            <button>Import CustomRoute Folder</button>
+        </a>
+        <a target="_blank" href="/tool/route/create_all_route_data_file.php">
+            <button>Import CustomRoute File</button>
+        </a>
+        <a target="_blank" href="/tool/route/delete_all_custom_route.php">
+            <button>Delete All Route</button>
+        </a>
+        <a target="_blank" href="/tool/refix_parent_all_data.php">
+            <button>ReFix Parent All Data</button>
+        </a>
+
+        <a target="_blank" href="/tool/route/test_trung_lap_route.php">
+            <button>Test Trùng lặp Route</button>
+        </a>
+
+        <?php
+    }
+    ?>
+
+</section>
+<!-- /.content -->
+<!-- Main content -->

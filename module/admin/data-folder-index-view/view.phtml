@@ -1,0 +1,30 @@
+
+<?php
+
+$module = \Base\ClassRoute::getCurrentModule();
+$controller = \Base\ClassRoute::getCurrentController();
+$action = \Base\ClassRoute::getCurrentAction();
+
+$params = \Base\ClassRoute::getArrParams();
+
+if(isset($params['id'])){
+    $idRand = $params['id'];
+    $item_id = $id = qqgetIdFromRand($params['id']);
+    if(!is_numeric($id)){
+        loi("Not valid id?");
+    }
+
+    //bl("ID = $id");
+
+    $obj = new \Base\ModelDataFolder();
+    if(!$obj->getOne($id)){
+        bl("Không tồn tại id này? $idRand");
+        return;
+    }
+
+    echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+    print_r($obj);
+    echo "</pre>";
+
+
+}

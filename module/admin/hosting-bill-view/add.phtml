@@ -1,0 +1,85 @@
+<!-- Content Header (Page header) -->
+<section class="content-header">
+    <h1>
+        Hosting Add Bill
+        <small></small>
+    </h1>
+    <ol class="breadcrumb">
+        <li><a href="#"><i class="fa fa-dashboard"></i> Home</a></li>
+        <li class="active">Hosting</li>
+    </ol>
+</section>
+
+<!-- Main content -->
+<section class="content" ng-controller="admin_hosting_bill_index">
+
+<?php
+$module = \Base\ClassRoute::getCurrentModule();
+$controller = \Base\ClassRoute::getCurrentController();
+$action = \Base\ClassRoute::getCurrentAction();
+
+?>
+<style>
+    input , button{
+        padding: 3px;
+        margin: 3px;
+        width: 200px;
+    }
+</style>
+
+<input type="text" id="user_email" placeholder="Enter user email" >
+<br>
+<input type="text" id="name_hosting" placeholder="Server name (VM name)">
+<br>
+
+<button onclick="saveNewsBill()"> Create Bill</button>
+    <br>
+<a href="/admin/hosting-bill">   <button onclick="saveNewsBill()"> Return</button></a>
+
+
+</section>
+
+
+<script>
+    $( function() {
+        $( "#user_email" ).autocomplete({
+            source: "/a_p_i/search/user/",
+            minLength: 2,
+            select: function( event, ui ) {
+                console.log( "Selected: " + ui.item.value + " / " + ui.item.id );
+//                if(ui.item.id)
+//                    $( "#edit_userid" ).val(ui.item.id);
+//                else
+//                    $( "#edit_userid" ).val("");
+            }
+        });
+    } );
+
+</script>
+
+<script>
+
+    function saveNewsBill() {
+//        alert("Save dataa");
+
+        var data1 = {};
+
+        data1['user_email'] = $("#user_email").val();
+        data1['name_hosting'] = $("#name_hosting").val();
+
+        var urlPost = "/a_p_i/admin-hosting-bill/add-bill";
+
+        console.log(" urlPost Save = " + urlPost);
+
+        showWaittingIcon();
+        $.post(urlPost, data1, function(result){
+
+            hideWaittingIcon();
+
+            if(!ClassApi.checkReturnApi(result))
+                return;
+            window.location.href = "<?php echo "/$module/$controller/view/id/" ?>" + result.payload;
+        });
+    }
+
+    </script>

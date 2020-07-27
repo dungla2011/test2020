@@ -1,0 +1,31 @@
+
+<section class="content">
+Edit Crawl Link
+<br>
+<?php
+
+require_once "view.phtml";
+?>
+    <b>
+Trạng thái:
+    </b>
+    <br>
+    <?php
+
+    $params = \Base\ClassRoute::getArrParams();
+
+    if(isset($params['id'])){
+        $id = $params['id'];
+        $obj = new \Base\ModelDataCrawle($id);
+        if($obj->id){
+            echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+            print_r($obj);
+            echo "</pre>";
+        }
+    }
+
+
+
+    ?>
+
+</section>

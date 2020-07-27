@@ -1,0 +1,51 @@
+<section class="content">
+
+    <?php
+
+        $params = \Base\ClassRoute::getArrParams();
+
+        if(!isset($params['page'])){
+            $params['page'] = 1;
+        }
+
+//
+        require_once "application/module/a_p_i/admin-music-controller.php";
+//
+        $obj = new \Base\ModelMusicFile();
+//
+        $ctrl = new \A_p_iModule\AdminMusicController();
+
+        echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+        print_r($params);
+        echo "</pre>";
+//
+        $params['limit'] = 10;
+        $ret = $ctrl->indexAction($params);
+
+
+        echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+        print_r($ret['info_data']);
+        echo "</pre>";
+
+//        echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+//        print_r($ret);
+//        echo "</pre>";
+
+        $arrToPlay = \Base\ClassMusicToPlay::getArrToPlay($ret['arr_data']);
+
+        echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+        print_r($arrToPlay);
+        echo "</pre>";
+
+    ?>
+
+
+    <table>
+
+
+
+    </table>
+
+
+
+</section>

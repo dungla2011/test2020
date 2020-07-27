@@ -1,0 +1,160 @@
+<?php
+$params = \Base\ClassRoute::getArrParams();
+$paramsPost = $_POST;
+clsDbTableMng::$gidCurrent = getCurrentGid();
+clsDbTableMng::$class = \Base\modelIpHosting::class;
+
+$obj1 = new clsDbTableMng::$class;
+if($obj1 instanceof \Base\modelBaseMongo);
+
+
+$urlOrg = ctoolUrl::getUriWithoutParam();
+
+$cl = \Base\modelIpHosting::class;
+$link = $urlOrg;
+
+clsDbTableMng::isEnableDeleteButtonInList();
+clsDbTableMng::setShowDeleteButtonInList(1);
+clsDbTableMng::setAllowAddButton(1);
+
+
+//echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+//print_r($params);
+//echo "</pre>";
+
+if(isset($params['iplist_new']))
+if($ipnew = $params['iplist_new']){
+
+    if(strstr($ipnew, ","))
+        $mip = explode(",", $ipnew);
+    if(strstr($ipnew, "\n"))
+        $mip = explode("\n", $ipnew);
+
+    foreach ($mip AS $ip1){
+        $ip1 = trim($ip1);
+
+        if (filter_var($ip1, FILTER_VALIDATE_IP)) {
+            //echo "<br> IP = $ip1";
+            $obj = new \Base\modelIpHosting();
+            if(!$obj->getOneWhere(['ip' => $ip1])){
+                $obj->ip = $ip1;
+                $obj->createdAt = nowyh();
+                $obj->insert();
+                echo "<br> Insert done: $ip1";
+            }
+            else{
+                echo "<br/>\n IP đã tồn tại: $ip1";
+            }
+        }
+    }
+
+}
+
+
+//echo "<br/>\n";
+?>
+
+
+<link rel="stylesheet" href="/public/css/table_mng.css?v=<?php echo filemtime('/var/www/galaxycloud/public/css/table_mng.css') ?>">
+
+<!-- Content Header (Page header) -->
+<section class="content-header">
+    <h1>
+        <a href="<?php echo $link?>">
+            List_IP_Mng
+        </a>
+
+        <small>
+            <?php
+
+            if (isAdmin_()) {
+                $link1 = "/admin/db-mng?modelDb=" . urlencode(clsDbTableMng::$class) . "&meta_mng=1";
+                echo "<a target='_blank' href='$link1'> [MetaMng]</a>";
+            }
+
+            ?>
+
+        </small>
+
+    </h1>
+    <ol class="breadcrumb">
+        <li>
+            <b>
+            <a href="/admin/hosting/list-ip?sby_3=s8&page=1&sty_3=asc"> [ List free ip ]</a>
+            </b>
+        </li>
+        <li>
+        <?php
+        echo "<a href='$link?delete_list=1' class='fa fa-2x fa-trash'>  </a> ";
+        ?>
+        </li>
+
+    </ol>
+</section>
+
+
+<!-- Main content -->
+<section class="content">
+
+    Import IP List, mỗi IP 1 dòng, hoặc cách nhau bởi dấu phẩy :
+    <br>
+    <form action="" method="post">
+        <textarea name="iplist_new" style="width: 600px; height: 100px"></textarea>
+        <br>
+
+        <button type="submit">Import IP List</button>
+        <br>
+    </form>
+    <br>
+
+    <div style='width: 100%; background-color: ; border: 0px solid grey; padding: 0px; overflow-x:auto;'>
+
+        <?php
+
+        //$apiUrl = "/a_p_i/admin/mng-db-table?modelDb=" . urlencode(clsDbTableMng::$class);
+        $apiUrl = "/a_p_i/admin-ip-list";
+
+        clsDbTableMng::getInsertFormPost();
+
+        if(isset($params['insert_item'])){
+
+            echo "<br/>\n";
+            clsDbTableMng::showInsertForm();
+            echo "<br/>\n";
+            goto _END;
+        }
+
+        if(isset($params['edit_item'])){
+            echo "<br/>\n";
+            clsDbTableMng::showEditForm();
+            echo "<br/>\n";
+            goto _END;
+        }
+
+        //$obj1 = new modelDemo1Mongo();
+        if(!ctoolUrl::getParamInUrl('meta_mng')){
+            clsDbTableMng::getFilterSearchUI();
+            echo "<br/>\n";
+        }
+
+        clsDbTableMng::showTableData1();
+
+        _END:
+        ?>
+    </div>
+</section>
+<!-- /.content -->
+
+<?php
+
+?>
+
+
+<script>
+    //var apiUrl = '<?php echo $apiUrl?>';
+</script>
+
+<script>
+    clsDataTblMng.apiUrl = '<?php echo $apiUrl?>';
+</script>
+

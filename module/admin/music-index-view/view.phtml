@@ -1,0 +1,24 @@
+<section class="content" ng-controller="admin_music_like_view">
+
+<?php
+
+use Base\ClassRoute;
+
+$params = ClassRoute::getArrParams();
+
+if(isset($params['id'])) {
+    $id = qqgetIdFromRand($params['id']);
+    echo "<br/>ID = $id ";
+    $obj = \Base\ModelMusicFile::getOneWhere(" id = $id ");
+    echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+    print_r($obj);
+    echo "</pre>";
+}
+
+
+echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+print_r($params);
+echo "</pre>";
+?>
+
+</section>

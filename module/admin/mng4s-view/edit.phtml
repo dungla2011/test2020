@@ -1,0 +1,110 @@
+<?php
+$u = getCurrentUsername();
+//$obj = new \Base\ModelCloudFile();
+$urlBase = "/a_p_i/admin-uploader";
+$module = \Base\ClassRoute::getCurrentModule();
+$controller = \Base\ClassRoute::getCurrentController();
+$act = \Base\ClassRoute::getCurrentAction();
+$params = \Base\ClassRoute::getArrParams();
+
+$id = @$params['id'];
+$id = qqgetIdFromRand($id);
+
+if(!$id){
+    bl("Not valid id?");
+    return;
+}
+
+$obj = new ClassUploader($id);
+
+$user = new \Base\ModelUserCms();
+$user->getOne($obj->userid);
+
+
+//echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+//print_r($obj);
+//echo "</pre>";
+
+$cloud = \Base\ModelCloudUser::getOneWhereSql_("userid = $obj->userid");
+
+//echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+//print_r($cloud);
+//echo "</pre>";
+
+if($cloud instanceof \Base\ModelCloudUser);
+
+$gb = $cloud->glx_bytes_in_avail / _GB;
+
+$arr = \Base\ModelCloudUser::getQuotaArrayGB();
+
+//echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+//print_r($q);
+//echo "</pre>";
+
+?>
+
+
+<script>
+
+    $(document).ready(function(){
+        $("#setQuota").change(function(){
+            var set = $(this).children("option:selected").val();
+            //alert("You have selected: " + set);
+
+            var urlPost = "/a_p_i/admin4s/change-quota-uploader";
+            var data = {};
+            data['new_quota'] = set;
+            data['userid'] = <?php echo $obj->userid ?>;
+            $.post(urlPost, data, function(result){
+
+                if(!ClassApi.checkReturnApi(result)){
+                    return;
+                }
+
+                showToastInfoBottom("Set new Quota Done!");
+            });
+
+        });
+    });
+
+
+
+</script>
+
+<!-- Content Header (Page header) -->
+<section class="content-header">
+
+
+    <button style="float: right" class="btn btn-info"> <a href="/admin/mng4s/uploader">Return </a>  </button>
+    <h1>
+
+        <a href="<?php
+        echo "/$module/$controller/$act";
+        ?>">
+            EditUploader
+        </a>
+    </h1>
+
+
+</section>
+
+<!-- Main content -->
+
+<section class="content">
+    <?php
+    echo "<b>Set Quota for User: </b>";
+    echo "<br/>Email: $user->email";
+    echo "<br/>Username: $user->username";
+    ?>
+    <br>
+    Change Quota: <select id="setQuota">
+        <?php
+        foreach ($arr As $q) {
+            $sl = "";
+            if($gb == $q)
+                $sl = 'selected';
+            echo "<option value='$q' $sl> $q GB</option>";
+        }
+        ?>
+    </select>
+</section>

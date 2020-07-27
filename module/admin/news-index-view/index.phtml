@@ -1,0 +1,32 @@
+<!-- Content Header (Page header) -->
+<section class="content-header">
+    <h1>
+        News List
+        <small></small>
+    </h1>
+    <ol class="breadcrumb">
+        <li><a href="#"><i class="fa fa-dashboard"></i> Home</a></li>
+        <li class="active">Data list</li>
+    </ol>
+</section>
+
+<?php
+//require_once (\Base\ClassRoute::$rootDirApp."/block/upload_block.php");
+?>
+<!-- Main content -->
+<section class="content" ng-controller="news_index_view">
+
+    <?php
+    require_once ("application/block/default_index.php");
+    ?>
+
+
+    <br>
+
+    <a target="_blank" href="/tool/crawler/crawler_news/all_site.php"> <button style="background-color: green; color: whitesmoke"> Crawler news  </button> </a>
+    &nbsp;
+    <a target="_blank" href="/tool/crawler/save_all_images_news_to_host.php"> <button style="background-color: green; color: whitesmoke"> Crawler images  </button> </a>
+    
+</section>
+<!-- /.content -->
+<!-- Main content -->

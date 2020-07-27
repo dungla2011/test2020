@@ -1,0 +1,58 @@
+<!-- Content Header (Page header) -->
+<section class="content-header">
+    <h1>
+        NewsAdd
+        <small> <a href="/admin/news-index/index2">Index</a> </small>
+    </h1>
+    <ol class="breadcrumb">
+        <li><a href="#"><i class="fa fa-dashboard"></i> Home</a></li>
+        <li class="active">News list</li>
+    </ol>
+</section>
+
+<style>
+    div[id^='to_update_']{
+        max-height:600px;
+    }
+</style>
+
+<?php
+
+$params = \Base\ClassRoute::getArrParams();
+$paramsPost = $_POST;
+clsDbTableMng::$gidCurrent = getCurrentGid();
+clsDbTableMng::$class = modelNewsFile2::class;
+clsDbTableMng::setAllowAddButton(1);
+clsDbTableMng::setAllowSaveButtonOnEdit(1);
+//clsDbTableMng::setUrlEditActionInList("/admin/admin-index/view2");
+clsDbTableMng::setUrlApi("/a_p_i/admin-news-mg-list");
+$obj1 = new clsDbTableMng::$class;
+
+if ($obj1 instanceof modelNewsFile2) ;
+
+?>
+
+<!-- Main content -->
+<section class="content">
+
+    <?php
+    clsDbTableMng::getInsertFormPost();
+
+    echo "<br/>\n";
+    clsDbTableMng::showInsertForm();
+    echo "<br/>\n";
+    goto _END;
+
+    _END:
+
+
+    ?>
+
+</section>
+<!-- /.content -->
+<!-- Main content -->
+
+<script>
+    clsDataTblMng.apiUrl = '<?php   echo  clsDbTableMng::getUrlApi();    ?>';
+    clsDataTblMng.returnAfterInsert = "/admin/news-index/view-mg";
+</script>

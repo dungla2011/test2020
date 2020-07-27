@@ -1,0 +1,255 @@
+<?php
+
+$obj = new \Base\ModelBillHosting();
+$urlBase = "/a_p_i/admin-payment";
+
+$obj = new \Base\ModelBillHosting();
+
+$class = get_class($obj);
+
+$module = \Base\ClassRoute::getCurrentModule();
+$controller = \Base\ClassRoute::getCurrentController();
+$action = \Base\ClassRoute::getCurrentAction();
+$strToSaveSession = str_replace("-", "_", $module . $controller . $action);
+
+$params = \Base\ClassRoute::getArrParams();
+
+if($module == 'member'){
+    //die("Member ...");
+}
+
+if (isset($params['id'])) {
+    $idRand = $params['id'];
+    $id = qqgetIdFromRand($params['id']);
+    if (!is_numeric($id)) {
+        loi("Not valid id?");
+    }
+
+    $obj = new $class;
+    if (!$obj->getOne($id)) {
+        bl("Không tồn tại id này? $idRand");
+        return;
+    }
+}
+$isNew = 0; $isEdit = 1;
+if (isset($params['create_new'])) {
+    $obj = new $class;
+    //$obj->initEmptyObject();
+    $isNew = 1;
+    $isEdit = 0;
+}
+
+?>
+
+<script src="/public/libaries/tinymce/tinymce.min.js"></script>
+
+<script>
+    <?php
+    if(isset($params['create_new'])){
+    ?>
+    var urlPost = '<?php echo $urlBase?>/add/';
+    <?php
+    }
+    else{
+    ?>
+    var urlPost = '<?php echo $urlBase?>/save/?' + "&id=" + '<?php echo $obj->id ?>';
+    <?php
+    }
+    ?>
+</script>
+
+<script>
+    $( function() {
+        $( "#search-userid" ).autocomplete({
+            source: "/a_p_i/search/user/",
+            minLength: 2,
+            select: function( event, ui ) {
+                console.log( "Selected: " + ui.item.value + " / " + ui.item.id );
+                if(ui.item.id)
+                    $( "#edit_userid" ).val(ui.item.id);
+                else
+                    $( "#edit_userid" ).val("");
+            }
+        });
+    } );
+
+</script>
+
+<style>
+    .ui-autocomplete {
+        max-height: 200px;
+        overflow-y: auto;
+        /* prevent horizontal scrollbar */
+        overflow-x: hidden;
+    }
+    .ui-menu-item{
+        padding: 3px 6px;
+    }
+    /* IE 6 doesn't support max-height
+     * we use height instead, but this forces the menu to always be this tall
+     */
+    * html .ui-autocomplete {
+            height: 200px;
+    }
+</style>
+
+
+<div style="padding: 10px">
+
+    <?php
+    require_once "application/block/view/admin_view.php";
+
+    if (isset($params['id'])) {
+        $idRand = $params['id'];
+        echo "<b>";
+        echo ("PAY-ID: $idRand");
+        echo "</b><br/>";
+    }
+
+
+
+    $arrEdit = $obj->getArrayEditable();
+    $arrMeta = $obj->getMetaDataApi();
+
+    echo "<br/><div style='float: left; max-width: padding : 10px'>";
+
+
+    echo "<table class='glx03'>";
+
+    foreach ($arrEdit as $field) {
+        //if (!in_array("$field", ['summary', 'content', 'parent']))
+        if(1)
+        {
+            $val = null;
+            if(isset($obj->$field))
+                $val = $obj->$field;
+            $fieldU = strtoupper($field);
+            $fieldMeta = $obj->getMetaNameField($field);
+
+            echo "<tr><td>$fieldMeta: </td>";
+            if ($obj->isStatusField($field)) {
+                $padCheck = '';
+                if (isset($obj->$field) && $obj->$field)
+                    $padCheck = 'checked';
+                echo "<td style=''><input $padCheck type='checkbox' id='edit_$field'></td>";
+            } elseif ($slType = $obj->isSelectField($field)) {
+
+                echo "<td>";
+                if ($isEdit) {
+                    $padType = 'style="float: left"';
+                    if ($slType == 2) {
+                        $padType = 'multiple style="height: 180px;"';
+                        echo " <span style='color: red'> [ Double Click each line to view Contract ] </span> <br/>";
+                    }
+
+                    echo "<select $padType id='edit_$field'>";
+                    //echo "<option value='0'>-- Select --</option>";
+
+                    $arrSl = $obj->getArrSelectOnField("$field", ['userid' => $obj->userid]);
+                    foreach ($arrSl AS $idSl => $valSl) {
+                        //for($x0=1; $x0<=3; $x0++) {
+                        $padSelect = "";
+                        $enc = $idSl;
+                        if ($idSl > 0)
+                            $enc = qqgetRandFromId($idSl);
+                        if ($idSl == $val || strstr($obj->$field, ",$idSl,"))
+                            $padSelect = "selected";
+                        echo "<option $padSelect value='$idSl' ondblclick='viewInfoBill(\"$enc\")'> $valSl</option>";
+                    }
+
+                    echo "</select>";
+                }
+                echo "</td>";
+            }
+            else {
+                $padSearch = $padHint = $email = '';
+                if($field == 'userid'){
+                    if($isEdit) {
+                        if($objUser = \Base\ModelUserCms::getOneWhere(" id = '$val'"))
+                            $email = $objUser->email;
+                    }
+                    $padHint = ' Enter email to search';
+                    echo "<input type='hidden' id='edit_$field' value='$val'>";
+                    echo "<td><input onkeyup='' placeholder='$padHint' style='display: inline; width: 400px' class='form-control' id='search-userid' value='$email'> $padSearch</td>";
+                }
+                else
+                    echo "<td><input placeholder='' style='display: inline; width: 400px' class='form-control' id='edit_$field' value='$val' title='$val'> $padSearch</td>";
+            }
+            echo "</tr>";
+        } else {
+
+        }
+    }
+    echo "</table>";
+    echo "</div>";
+
+    ?>
+</div>
+
+<script>
+
+    function viewInfoBill(billId) {
+        window.open("/<?php echo $module ?>/hosting-bill/view/id/" + billId, 'View Contract', "height=800,width=600");
+
+    }
+
+    function saveData() {
+        var data1 = {};
+        <?php
+        foreach ($arrEdit as $field) {
+            if($obj->isStatusField($field)){
+
+            }
+
+            {
+        ?>
+            var fieldName = '<?php echo $field?>';
+            var elmId = "#edit_" + fieldName;
+                if($(elmId).is(':checkbox')){
+                    if($(elmId).prop("checked") == true)
+                        data1[fieldName] = 1;
+                    else
+                        data1[fieldName] = 0;
+                }
+                else
+                    data1[fieldName] = $(elmId).val();
+        <?php
+            }
+        }
+        ?>
+
+        console.log(" DAA1 = " + JSON.stringify(data1));
+        console.log(" urlPost Save = " + urlPost);
+
+        showWaittingIcon();
+        $.post(urlPost, data1, function (result) {
+            hideWaittingIcon();
+
+            if (!ClassApi.checkReturnApi(result))
+                return;
+            if (result.payload == 0)
+                showToastWarningBottom("Nothing update?");
+            else
+                showToastInfoBottom("Done?");
+            <?php
+            if(isset($params['create_new'])){
+            ?>
+            window.location.href = "<?php echo "/$module/$controller/edit/id/" ?>" + result.payload;
+            <?php
+            }
+            ?>
+        });
+    }
+</script>
+
+<div style="clear: both"></div>
+<?php
+
+if(isAdmin_())
+if(isset($obj)){
+    echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+    print_r($obj);
+    echo "</pre>";
+}
+
+?>

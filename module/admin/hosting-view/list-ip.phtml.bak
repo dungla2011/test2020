@@ -1,0 +1,213 @@
+<link rel="stylesheet" href="/public/css/table_mng.css?v=<?php echo filemtime('/var/www/galaxycloud/public/css/table_mng.css') ?>">
+
+<!-- Content Header (Page header) -->
+<section class="content-header">
+    <h1>
+        ListIP
+        <small>Index</small>
+    </h1>
+    <ol class="breadcrumb">
+        <li><a href="#"><i class="fa fa-dashboard"></i> Home</a></li>
+    </ol>
+</section>
+
+<!-- Main content -->
+<section class="content">
+    <div style='width: 100%; background-color: ; border: 0px solid grey; padding: 0px; overflow-x:auto;'>
+
+        <?php
+
+        $params = \Base\ClassRoute::getArrParams();
+        $paramsPost = $_POST;
+        clsDbTableMng::$gidCurrent = getCurrentGid();
+        echo " GID : "  . clsDbTableMng::$gidCurrent ." | ";
+
+        //clsDbTableMng::$class = 'modelDemo1Mongo_Meta';
+
+
+
+        $mmClass = [\Base\modelIpHosting::class];
+
+
+        $urlOrg = ctoolUrl::getUriWithoutParam();
+        foreach ($mmClass as $cl) {
+            $link = $urlOrg.'?modelDb='.$cl;
+            $linkMetaMng = $urlOrg."?modelDb=$cl&meta_mng=1";
+            echo " <a href='$link'>$cl</a> <a href='$link&delete_list=1' class='fa fa-trash'>  </a>  [<a target='_blank'  href='$linkMetaMng'> Meta </a>]";
+        }
+
+
+        echo "<br/>\n";
+
+        //clsDbTableMng::$class = 'modelDemo1Mongo';
+
+        if(isset($params['modelDb'])){
+            clsDbTableMng::$class = $params['modelDb'];
+        }
+        else{
+            goto _END;
+        }
+
+        //deleteSample();
+        //insertSample();
+
+        $obj1 = new clsDbTableMng::$class;
+        if($obj1 instanceof \Base\modelBaseMongo);
+
+        //echo "<br/>\n DB = " . $obj1->getDbName();
+
+
+        $tblSet = $dbSet = '';
+        $isMngMeta = 0;
+        if(isset($params['meta_mng'])){
+            $isMngMeta = 1;
+            $obj1 = new clsDbTableMng::$class;
+            if($obj1 instanceof \Base\modelBaseMongo);
+            $mf = $obj1->getArrField();
+//    echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+//    print_r($mf);
+//    echo "</pre>";
+            $doneBefore = 0;
+            $cc = 0;
+            foreach ($mf as $field) {
+                $cc++;
+
+                $objMeta = new modelMetaDataTable();
+                $objMeta->setDbName($obj1->getDbName());
+
+                //Cần tblset này, để cho API quản trị bảng meta
+                $tblSet = $obj1->getTableName()."_meta_info";
+                $dbSet = $obj1->getDbName();
+
+                $objMeta->setTableName($tblSet);
+                if($objMeta->getOneWhere(['field'=>$field]))
+                {
+                    if(!$objMeta->sname != $objMeta->_id){
+                        //echo "<br/>\n EmptySname => ";
+                        $objMeta->sname = "s".$objMeta->_id;
+                        $objMeta->updateMe();
+                    }
+                    continue;
+                }
+                $objMeta->field = $field;
+                $objMeta->insert();
+
+                $objMeta->sname = "s".$objMeta->_id;
+                $objMeta->updateMe();
+            }
+
+            //Nếu vào quản lý meta, thì gán lại class, để quản trị bảng của meta
+            clsDbTableMng::$class = 'modelMetaDataTable';
+
+
+//    echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+//    print_r($objMeta->getMetaDataApi());
+//    echo "</pre>";
+
+        }
+
+        $apiUrl = "/train/project-mongodb-vuejs/api.php?modelDb=" . clsDbTableMng::$class . '&tblSet='.$tblSet;
+        $apiUrl = "/a_p_i/admin/mng-db-table?modelDb=" . urlencode(clsDbTableMng::$class) . '&tblSet='.$tblSet.'&dbSet='.$dbSet;
+
+        if(isset($params['insertItem'])){
+            foreach ($paramsPost AS $k=>$v){
+                if(substr($k, 0, strlen('insert_')) == 'insert_'){
+                    $field = str_replace('insert_', '', $k);
+                    $obj1->$field = $v;
+                }
+            }
+            $obj1->insert();
+        }
+
+
+        if(isset($params['insert_item'])){
+
+            $mff =  $obj1->getFieldsWhenGetOne(clsDbTableMng::$gidCurrent);
+            if(!$mff){
+                bl("Not editable field getOne ? ");
+                goto _END;
+            }
+
+            echo "<br/>\n";
+            echo "<table border='1' style='; background-color: lavender'>";
+
+            foreach ($mff as $field=>$tmp) {
+                if($field == '_id')
+                    continue;
+                echo "<tr>";
+                $namef = $obj1->getNameDescFromField($field, 1);
+
+                if($obj1->isEditableField($field, 1)){
+                    echo "<td> $namef </td>";
+                    echo "<td> <input id='to_insert_$field-' style='background-color: ' type='text' value=''/> </td>";
+                }
+//        else
+//            echo "<td> ".$obj1->$field."</td>";
+                echo "</tr>";
+            }
+            echo "</table>";
+            echo "<button style='padding: 5px 10px; border: 1px solid green' onclick='clsDataTblMng.insertItem()'> INSERT </button>";
+
+            echo "<br/>\n";
+            goto _END;
+        }
+
+        if(isset($params['edit_item'])){
+            $id = $params['edit_item'];
+            $mOpt = [];
+            if(!ctoolUrl::getParamInUrl('meta_mng'))
+                $mff = $mOpt['projection'] = $obj1->getFieldsWhenGetOne(clsDbTableMng::$gidCurrent);
+            $obj1->getOneId($id, $mOpt);
+            echo "<br/>\n";
+            echo "<table border='1' style='; background-color: lavender'>";
+            foreach ($mff as $field=>$tmp) {
+                echo "<tr>";
+                $namef = $obj1->getNameDescFromField($field, 1);
+                echo "<td> $namef </td>";
+                if($obj1->isEditableField($field, 1))
+                    echo "<td> <input id='to_update_$id-$field' style='background-color: ' type='text' value='".$obj1->$field."'/> </td>";
+                else
+                    echo "<td> ".$obj1->$field."</td>";
+                echo "</tr>";
+            }
+            echo "</table>";
+            echo "<button style='padding: 5px 10px; border: 1px solid green' onclick='clsDataTblMng.updateItem(\"$id\")'> SAVE </button>";
+
+            echo "<br/>\n";
+            goto _END;
+        }
+
+
+        //$obj1 = new modelDemo1Mongo();
+        if(!ctoolUrl::getParamInUrl('meta_mng')){
+            clsDbTableMng::getFilterSearchUI();
+            echo "<br/>\n";
+
+        }
+
+
+        ?>
+
+        <?php
+
+        clsDbTableMng::showTableData1();
+
+        _END:
+        ?>
+    </div>
+</section>
+<!-- /.content -->
+
+<?php
+
+?>
+
+
+<script>
+    //var apiUrl = '<?php echo $apiUrl?>';
+</script>
+
+<script src="/application/_js/table_mng.js?v=<?php echo filemtime('/var/www/galaxycloud/application/_js/table_mng.js')?>"></script>
+<script>
+    clsDataTblMng.apiUrl = '<?php echo $apiUrl?>';
+</script>

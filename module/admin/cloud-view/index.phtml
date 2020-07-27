@@ -1,0 +1,146 @@
+<?php
+
+$link = ctoolUrl::getUriWithoutParam();
+
+$params = \Base\ClassRoute::getArrParams();
+$paramsPost = $_POST;
+
+$t0 = microtime(1);
+
+?>
+
+<!-- Content Header (Page header) -->
+<section class="content-header">
+    <h1>
+        ADMIN Cloud Index
+        <small> <a href="/admin/cloud/index">Index</a> </small>
+    </h1>
+    <ol class="breadcrumb">
+        <li>
+            <?php
+            $pad = '';
+            $link = ctoolUrl::getUriWithoutParam();
+            if(clsDbTableMng::$optShowRecyleBinIcon){
+                $linkRec = $link."?delete_list=1";
+                echo "<div class='trash_glx' title='deleted item'>";
+                if(isset($params['delete_list'])){
+                    $pad = "style = 'color: red; font-size: 30px'";
+                    echo "<a $pad href='$link' class='fa fa-2x fa-trash'>  </a> ";
+                }else
+                    echo "<a href='$linkRec' class='fa fa-2x fa-trash'>  </a> ";
+
+                echo "</div>";
+            }
+            ?>
+        </li>
+    </ol>
+
+</section>
+
+<?php
+function callBackMoveItemAction111($id)
+{
+    return " <span id='menu_item_id_$id' class='context-menu-one fa fa-list' style='' > </span> &nbsp;";
+    //echo " <span onclick='clsTree.openModalMoveItem($id)'> M </span> - ";
+    //echo " <span onclick='clsTree.openModalAddMultiFolder($id)'> A </span>";
+}
+
+//Table setting
+clsDbTableMng::$gidCurrent = 1;
+clsDbTableMng::$class = modelCloudFile2::class;
+clsDbTableMng::setAllowAddButton(1);
+clsDbTableMng::setAllowSaveButtonOnEdit(1);
+clsDbTableMng::setUrlEditActionInList("/member/cloud/view");
+clsDbTableMng::setUrlApi("/a_p_i/admin-cloud2-list");
+clsDbTableMng::setShowDeleteButtonInList(1);
+clsDbTableMng::$optShowSearchButtonInList = 1;
+
+//clsDbTableMng::$optExtraActionCallBack = 'callBackMoveItemAction';
+
+
+//Tree Setting
+clsTreeMng::$classFile = modelCloudFile2::class;
+clsTreeMng::$classFolder = modelCloudFolder2::class;
+
+
+$obj1 = new clsDbTableMng::$class;
+if ($obj1 instanceof \Base\modelBaseMongo) ;
+
+?>
+<!-- Main content -->
+<section class="content">
+
+    <?php
+
+    //$apiUrl = "/a_p_i/admin/mng-db-table?modelDb=" . urlencode(clsDbTableMng::$class);
+    echo "<div style='width: 20%; float: left'>";
+
+    //clsTreeMng::showTree();
+
+    echo "</div>";
+
+    echo "<div style='padding: 0px 5px; float: left; width: 80%'>";
+
+    clsDbTableMng::getInsertFormPost();
+
+    if (isset($params['insert_item'])) {
+
+        echo "<br/>\n";
+        clsDbTableMng::showInsertForm();
+        echo "<br/>\n";
+        goto _END;
+    }
+
+    if (isset($params['edit_item'])) {
+        echo "<br/>\n";
+        clsDbTableMng::showEditForm();
+        echo "<br/>\n";
+        goto _END;
+    }
+
+    //$obj1 = new modelDemo1Mongo();
+    if (!ctoolUrl::getParamInUrl('meta_mng')) {
+        clsDbTableMng::getFilterSearchUI();
+        echo "<br/>\n";
+    }
+
+    //$mFilter = ['userid'=>getCurrentUserId()];
+    $mFilter = null;
+    //clsDbTableMng::$currentUserIdSet = getCurrentUserId();
+
+    if(ClassSetting::$siteId)
+        $mFilter['siteid'] = ClassSetting::$siteId;
+
+    //echo "<br/>\n SITEID = " . ClassSetting::$siteId;
+
+    clsDbTableMng::showTableData1($mFilter);
+
+    echo "</div>";
+
+    _END:
+
+
+
+
+
+    ?>
+    <div style="clear: both"></div>
+
+</section>
+<!-- /.content -->
+<!-- Main content -->
+
+<?php
+if(isAdmin_()){
+    $dt = microtime(1) - $t0;
+    echo "<br/>\n DTimeEnd = $dt ";
+}
+?>
+
+<script>
+   clsDataTblMng.apiUrl = '<?php   echo  clsDbTableMng::getUrlApi();    ?>';
+   clsTree.apiBase = '<?php   echo  clsDbTableMng::getUrlApi();    ?>';
+   //clsTree.urlBase = '<?php echo ctoolUrl::getUriWithoutParam() ?>';
+
+</script>
+

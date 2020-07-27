@@ -1,0 +1,81 @@
+
+
+
+<?php
+$params = \Base\ClassRoute::getArrParams();
+
+$obj = new \Base\ModelDataLink();
+$urlBase = "/a_p_i/member-data-link";
+
+
+
+require_once "application/module/admin/demo1-view/view.phtml";
+
+if(!isset($obj->id)){
+    bl("Not found this id?");
+}
+else {
+
+    $item = new \Base\ModelDataFile($obj->item_id);
+
+    echo "<br/> <a style='color: red' target='_blank' href='/admin/data-index/view/id/".$item->id."' > Phim OK: $item->name </a>";
+
+
+    if(isset($obj->refer_remote)){
+        echo "<br/> <a href='$obj->refer_remote' target='_blank'> $obj->refer_remote </a> ";
+    }
+
+}
+
+return;
+
+
+//\Base\ClassRoute::$arrParams['sortField'] = 'createdAt';
+//\Base\ClassRoute::$arrParams['sortType'] = 'DESC';
+$module = \Base\ClassRoute::getCurrentModule();
+$controller = \Base\ClassRoute::getCurrentController();
+$act = \Base\ClassRoute::getCurrentAction();
+?>
+<section class="content-header">
+    <h1>
+
+        <a href="<?php
+        echo "/$module/$controller/";
+        ?>">
+            DataLinkView
+        </a>
+    </h1>
+</section>
+<!-- Main content -->
+<section class="content">
+    <?php
+
+    if(isset($params['id'])){
+
+        $id = $params['id'];
+
+        $obj = new \Base\ModelDataLink($id);
+
+        if(!isset($obj->id)){
+            bl("Not found this id?");
+        }
+        else {
+
+            $item = new \Base\ModelDataFile($obj->item_id);
+
+            echo "<br/> <a style='color: red' target='_blank' href='/admin/data-index/view/id/".$item->id."' > Phim OK: $item->name </a>";
+
+
+            if(isset($obj->refer_remote)){
+                echo "<br/> <a href='$obj->refer_remote' target='_blank'> $obj->refer_remote </a> ";
+            }
+
+            echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+            print_r($obj);
+            echo "</pre>";
+        }
+    }
+
+
+    ?>
+</section>

@@ -1,0 +1,134 @@
+<?php
+$params = \Base\ClassRoute::$arrParams;
+
+if(!isset($params['id'])){
+    bl("Not found id?");
+    return;
+}
+
+?>
+
+<div class="container">
+    <br>
+    <a class="btn btn-info" style="position: fixed; right: 20px" href="/admin/bill-center/"> Trở lại </a>
+    <br>
+    <h4> Hóa đơn hàng số: <span style="color: brown; font-weight: bold"> <?php echo $params['id'] ?> </span></h4>
+
+<?php
+
+
+
+$bill = new \Base\ModelBillCenter();
+if(!$bill->getOne($params['id'])){
+    bl("Not found this bill?");
+    goto __END;
+}
+
+$cartInfo = json_decode($bill->bill_info_json);
+//
+//echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+//print_r($cartInfo);
+//echo "</pre>";
+
+$totalAll = 0;
+if(isset($cartInfo->cart_info) && is_array($cartInfo->cart_info))
+foreach ($cartInfo->cart_info as $item) {
+
+    $objC = new \Base\ModelCartInfo();
+    $objC->loadFromObj($item);
+
+    if($objC instanceof \Base\ModelCartInfo);
+
+//    echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+//    print_r($objC);
+//    echo "</pre>";
+    $objProd = new \Base\ModelDataFile();
+    $idReal = qqgetIdFromRand($objC->id);
+    if(!$objProd->getOne($objC->id)){
+        bl("Not found product id? ($objC->id / $idReal)");
+        continue;
+    }
+
+    $link = $objProd->getLinkFriendlyAndInsertRoute();
+    echo "<table class='glx01'>";
+    echo "<tr>";
+    echo "<td>Tên SP</td>";
+    echo "<td><a href='/$link' target='_blank'>$objC->name</a></td>";
+    echo "</tr>";
+
+    echo "<tr>";
+    echo "<td>Số lượng</td>";
+    echo "<td>$objC->quantity</td>";
+    echo "</tr>";
+
+    echo "<tr>";
+    echo "<td>Giá</td>";
+    echo "<td>$objC->price</td>";
+    echo "</tr>";
+
+    echo "<tr>";
+    echo "<td>Giá gốc</td>";
+    echo "<td>$objC->originalPrice</td>";
+    echo "</tr>";
+
+    $total = $objC->originalPrice * $objC->quantity;
+    echo "<tr>";
+    echo "<td>Thành tiền</td>";
+    echo "<td>$total</td>";
+    echo "</tr>";
+
+    echo "</table>";
+    $totalAll += $total;
+    echo "<br/>";
+}
+
+echo "<table class='glx03'>";
+echo "<tr>";
+echo "<td style='font-weight: bold'>Thanh toán</td>";
+echo "<td style='font-weight: bold'>".number_format($totalAll,0,",", ".")." VND </td>";
+echo "</tr>";
+echo "</table>";
+
+echo "<table class='glx03'>";
+echo "<tr>";
+echo "<td>Tên hàng</td>";
+echo "<td> $bill->name</td>";
+echo "</tr>";
+echo "<tr>";
+echo "<td>Khách hàng</td>";
+echo "<td> $bill->fullname</td>";
+echo "</tr>";
+echo "<tr>";
+echo "<td>Điện thoại</td>";
+echo "<td> $bill->handphone</td>";
+echo "</tr>";
+echo "<tr>";
+echo "<td>Địa chỉ</td>";
+echo "<td> $bill->address</td>";
+echo "</tr>";
+echo "<tr>";
+echo "<td>Ngày tạo đơn</td>";
+echo "<td> $bill->createdAt</td>";
+echo "</tr>";
+echo "<tr>";
+echo "<td>Ngày Sử dụng:</td>";
+echo "<td> $bill->ship_time</td>";
+echo "</tr>";
+
+echo "<tr>";
+echo "<td>Ngày thanh toán</td>";
+echo "<td></td>";
+echo "</tr>";
+
+echo "</table>";
+
+if(isAdmin_()) {
+    echo "<hr/>ADMIN:";
+    echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+    print_r($bill);
+    echo "</pre>";
+}
+__END:
+
+?>
+</div>

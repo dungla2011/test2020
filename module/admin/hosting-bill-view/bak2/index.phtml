@@ -1,0 +1,9 @@
+<?php
+
+$obj = new \Base\ModelBillHosting();
+$urlBase = "/a_p_i/admin-payment";
+
+\Base\ClassRoute::$arrParams['sortField'] = 'createdAt';
+\Base\ClassRoute::$arrParams['sortType'] = 'DESC';
+
+require_once "application/module/admin/demo1-view/index.phtml";

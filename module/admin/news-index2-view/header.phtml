@@ -1,0 +1,75 @@
+<?php
+$mm = [
+    "index" => "<i class='fa fa-list'></i> &nbsp; Danh sách Tin tức",
+    "tree" => "<i class='fa fa-folder-open-o'></i>  &nbsp; Quản lý danh mục Tin tức",
+];
+?>
+
+<div class="content-header header_menu_news" style="padding-top: 20px">
+
+    <?php
+
+    $url  = ctoolUrl::getUriWithoutParam() ;
+
+    $module = \Base\ClassRoute::getCurrentModule();
+    $controller = \Base\ClassRoute::getCurrentController();
+
+    $inDanhSach = 0;
+    $cc = 0;
+    foreach ($mm AS $link => $name){
+        $cc++;
+        $padStyle = "";
+        if(\Base\ClassRoute::getCurrentAction() == $link ){
+            $padStyle = "style='color: #337ab7; font-weight: bold'";
+            if($cc == 1)
+                $inDanhSach = 1;
+        }
+        ?>
+        <a <?php echo $padStyle ?> class="form-control" href="<?php echo "/$module/$controller/$link" ?>">
+            <?php  echo $name  ?>
+        </a>
+    <?php
+
+    }
+
+    if($inDanhSach){
+        $obj = new clsTreeMng::$classFile;
+        if($obj instanceof \Base\ModelTreeFile);
+        $sname = $obj->getShortNameFromField('parent');
+
+    ?>
+        <a onclick="clsTree.openModalMoveItem('get_folder_to_browse')" class="form-control" href="">
+            Đang duyệt:
+            <?php
+            if($parentId = ctoolUrl::getParamInUrl("ssf_".$sname)){
+                //echo "<br/>\n PID = $parentId";
+                $ofolder = new clsTreeMng::$classFolder;
+                if($ofolder->getOneId($parentId)) {
+                    if ($ofolder instanceof \Base\ModelTreeFolder) ;
+                    $mm = $ofolder->getParentPathThis();
+
+                    if ($mm) {
+                        $mm = array_reverse($mm);
+                        foreach ($mm as $ofolder1) {
+                            echo " <b> $ofolder1->name </b> / ";
+                        }
+                    }
+                    echo " <b> $ofolder->name / </b>";
+                }
+            }else
+                echo " <b>Tất cả tin</b> ";
+            ?>
+        </a>
+    <?php
+        if(isset($ofolder)) {
+            $linkPublic = $ofolder->getLinkFriendlyUrlSimple();
+            echo " <a style='background-color: white' target='_blank' class='fa fa-play' href='$linkPublic'> </a>";
+        }
+    }
+    ?>
+
+</div>
+
+<br>
+<p style="border-bottom: 1px solid #ccc; margin: 0px"></p>
+

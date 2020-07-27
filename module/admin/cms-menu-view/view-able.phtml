@@ -1,0 +1,191 @@
+<link rel="stylesheet" type="text/css" href="<?php echo \Base\ClassRoute::getBaseUri()?>/public/jtree/stylesheet_org.css" media="screen">
+<link rel="stylesheet" type="text/css" href="<?php echo \Base\ClassRoute::getBaseUri()?>/public/jtree/github-dark.css" media="screen">
+<script src="<?php echo \Base\ClassRoute::getBaseUri()?>/public/jtree/jquery-sortable-lists.js"></script>
+
+
+<div ng-controller="cms_menu_view_able" id="cms_menu_view_able_div" style="padding: 10px">
+
+
+    <!-- Content Header (Page header) -->
+    <section class="content-header">
+        <h1>
+            Menu - Viewable
+            <small>Menu các nhóm sẽ nhìn thấy</small>
+        </h1>
+        <ol class="breadcrumb">
+            <li><a href="#"><i class="fa fa-dashboard"></i> Home</a></li>
+            <li class="active">Menu</li>
+        </ol>
+    </section>
+
+    <!-- Main content -->
+    <section class="content" style="min-height:0px">
+
+
+        <div>
+
+
+            <br/>
+            <p style="font-weight: bolder">Chọn Menu:</p>
+            <div ng-repeat="group in group_menu_names"
+                 style="background: snow; margin: 3px; padding: 3px 5px; display: inline-block">
+                <input ng-checked="group.id == selecting_cat_menu ? true : false" type="radio" name="group_menu" id="memu_{{group.id}}"
+                       value="{{group.id}}" ng-click="groupMenuSelected(group.id)"> <label title="{{group.id}}"
+                                                                                           for="memu_{{group.id}}">{{group.cat_name}} </label>
+            </div>
+
+            <?php
+
+            $obj = new \Base\ModelMenuCms();
+            if(!$obj->getOneWhereSql("1")){
+                //echo "<br/> Chưa có Menu nào?";
+                $obj->name = "First Menu 1";
+                $obj->status = 1;
+                $obj->cat_id  = 1;
+                if(ClassSetting::$siteId)
+                    $obj->siteid = ClassSetting::$siteId;
+
+                if(!$obj->insertDbMe()){
+                    bl("Không thể thêm first menu?");
+                }
+                else
+                    tb("Thêm thành công menu!");
+
+                $obj->name = "First Menu 2";
+                $obj->cat_id  = 2;
+                if(ClassSetting::$siteId)
+                    $obj->siteid = ClassSetting::$siteId;
+                if(!$obj->insertDbMe()){
+                    bl("Không thể thêm first menu?");
+                }
+                else
+                    tb("Thêm thành công menu!");
+
+                $obj->name = "First Menu 3";
+                $obj->cat_id  = 3;
+                if(ClassSetting::$siteId)
+                    $obj->siteid = ClassSetting::$siteId;
+                if(!$obj->insertDbMe()){
+                    bl("Không thể thêm first menu?");
+                }
+                else
+                    tb("Thêm thành công menu!");
+            }
+            else{
+                //bl("Danh sách menu:");
+            }
+            ?>
+
+            <?php
+
+            ?>
+
+        </div>
+
+
+
+
+        <div>
+            <br/>
+            <p style="font-weight: bolder">Chọn Nhóm user:</p>
+            <div ng-repeat="group in groups"
+                 style="background: snow; margin: 3px; padding: 3px 5px; display: inline-block">
+            <input ng-checked="group.id == selecting_gid ? true : false" type="radio" name="group_user" id="gr_{{group.id}}"
+                   value="{{group.id}}" ng-click="groupUserSelected(group.id)"> <label title="{{group.id}}"
+                                                                                       for="gr_{{group.id}}">{{group.groupname}} </label>
+            </div>
+
+        </div>
+        <!-- /.box-header -->
+
+    </section>
+
+    <script type="text/ng-template" id="nodes_renderer.html">
+        <div>
+
+            <input id="disableHref_{{item.id}}" type="checkbox" ng-click="disableHref(item.id)" class="clickable"
+                   ng-checked="item.disable_href == 1"
+                   style="float: right; color: red"
+                   title="disable Link this menu (checked for disable)"
+            >
+
+            <input id="viewable_for_group_{{item.id}}" type="checkbox" ng-click="enableForGroup(item.id)"
+               title="{{item.group_id_show == 2 ? 'Kế thừa từ Guest user' : 'enable viewable'}}" class="clickable"
+                   ng-checked="item.group_id_show"
+                   ng-disabled="item.group_id_show == 2"
+            >
+
+            <input id="open_new_tab_for_group_{{item.id}}" type="checkbox" style="background-color: blue" ng-click="openNewTab(item.id)"
+                   title="Open new tab in Browser" class="clickable"
+                   ng-checked="item.open_new_tab == 1"
+            >
+
+            <i id="btn_edit_{{item.id}}" ng-click="editItemId(item.id, item.name, item.link)"
+               class="clickable fa fa-pencil-square-o" aria-hidden="true"
+               title="edit item"
+               ng-show="!editAll && editing.id!=item.id"
+            ></i>
+
+            <i style="color: orange" ng-click="saveItemId(item.id)"
+               class="clickable fa fa-floppy-o" id="btn_done_{{item.id}}"
+               title="save item"
+               ng-show="editAll || editing.id==item.id"
+            ></i>
+
+            <i style="color: red" ng-click="cancelEdit(item.id)"
+               class="clickable fa fa-times" id="btn_cancel_{{item.id}}"
+               title="cancel edit item"
+               ng-show="editAll || editing.id==item.id"
+            ></i>
+
+            <i style="" ng-click="deleteItemId(item.id)"
+               class="clickable fa fa-trash-o" id="btn_delete_{{item.id}}"
+               title="delete item"
+            ></i>
+
+            <i style="" ng-click="addItemId(item.id)"
+               class="clickable fa fa-plus-square" id="btn_add_{{item.id}}"
+               title="add new item"
+            ></i>
+
+            <span ng-show="!editAll && editing.id!=item.id" id="span_item_{{item.id}}" style="">{{item.name}}</span> (En:
+            <span ng-show="!editAll && editing.id!=item.id" id="span_item_en{{item.id}}" style="color: whitesmoke">{{item.name_en}}</span> )
+            <span ng-show="!editAll && editing.id!=item.id" style="">
+                ( Link: <a class="clickable" target="_blank" href='https://<?php echo DOMAIN_MAIN ?>{{item.link}}'> {{item.link}} </a>,
+                 Icon: <i class="{{item.fa_icon_class}}"></i>,
+                 News route: <a class="clickable" target="_blank" href='{{baseUrl + "admin/news-index"}}'> {{item.idnews}} </a> )
+            </span>
+            <input ng-show="editAll || editing.id==item.id" placeholder="Name" title="Name" id="input_name_{{item.id}}" style="color: black;"
+                   ng-esc="cancelEdit(item.id)" ng-enter='saveItemId(item.id)' class='clickable' ng-model="item.name">
+            <input ng-show="editAll || editing.id==item.id" placeholder="Name Eng" title="Name Eng" id="input_name_en_{{item.id}}" style="color: black;"
+                   ng-esc="cancelEdit(item.id)" ng-enter='saveItemId(item.id)' class='clickable' ng-model="item.name_en">
+            <input ng-show="editAll || editing.id==item.id" placeholder="link" title="link" id="input_link_{{item.id}}" style="color: black;"
+                   ng-esc="cancelEdit(item.id)" ng-enter='saveItemId(item.id)' class='clickable' ng-model="item.link">
+            <input ng-show="editAll || editing.id==item.id" placeholder="icon" title="icon" id="input_icon_{{item.id}}" style="color: black;"
+                   ng-esc="cancelEdit(item.id)" ng-enter='saveItemId(item.id)' class='clickable' ng-model="item.fa_icon_class">
+            <input ng-show="editAll || editing.id==item.id" placeholder="News id to route" title="News id to route" id="input_idnews_{{item.id}}" style="color: black;"
+                   ng-esc="cancelEdit(item.id)" ng-enter='saveItemId(item.id)' class='clickable' ng-model="item.idnews">
+        </div>
+        <ul>
+            <li ng-class="item[childArrName].length > 0 ? 'sortableListsOpen' : ''"
+                ng-repeat="item in item[childArrName]" id="itemid-{{item.id}}" ng-include="'nodes_renderer.html'">
+            </li>
+        </ul>
+    </script>
+
+    <div id="tree_zone">
+        <section id="main_content_tree">
+            <ul id="sTree2" class="sTree2 listsClass" style="margin: 0px 0px; max-width:800px ">
+                <li ng-class="item[childArrName].length > 0 ? 'sortableListsOpen' : ''" ng-repeat="item in tree_data"
+                    id="itemid-{{item.id}}" ng-include="'nodes_renderer.html'">
+                </li>
+            </ul>
+
+        </section>
+    </div>
+<!---->
+<!--    <br>-->
+<!--    Note: Guest thấy menu nào, thì các nhóm khác cũng thấy menu đó!-->
+
+    <br><br><br>
+</div>

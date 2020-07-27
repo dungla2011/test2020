@@ -1,0 +1,46 @@
+<?php
+$params = \Base\ClassRoute::getArrParams();
+//echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+//print_r($params);
+//echo "</pre>";
+
+if (isset($params['post_email'])) {
+    //Lấy đối tượng từ các giá trị Post trên form
+    $objPost = new ClassMoneyUploader();
+    $objPost->LoadFromArray($params, 'post_');
+//    echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+//    print_r($objPost);
+//    echo "</pre>";
+
+    $email = $objPost->email;
+    if(!\clsValidate::isEmail($email)){
+        die("Error: not valid email: $email");
+    }
+    $objUser = new \Base\ModelUserCms();
+    if(!$objUser->getOneWhere_("email = '$email'")){
+        bl("Not found user?");
+        return;
+    }
+
+//    echo "<br/> MysqliDb::getLastQuery1() = " . MysqliDb::getLastQuery1();
+//
+//
+//    echo "<pre> >>> " . __FILE__ . "(" . __LINE__ . ")<br/>";
+//    print_r($objUser);
+//    echo "</pre>";
+
+    $objPost->mon_info = urldecode($objPost->mon_info);
+
+    $userid = $objUser->id;
+    if($objPost->getOneWhere_("userid = $userid AND money = '$objPost->money' AND mon_info = '$objPost->mon_info'")){
+        bl(" Đã add Payment lúc: $objPost->mon_info / ".$objPost->time);
+        return;
+    }
+    unset($objPost->email);
+    unset($objPost->username);
+    $objPost->userid = $userid;
+    $objPost->insertDbMe();
+    bl("Add Payment DONE - $objPost->mon_info");
+}
+
+?>

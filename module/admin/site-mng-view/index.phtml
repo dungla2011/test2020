@@ -1,0 +1,32 @@
+<!-- Content Header (Page header) -->
+<section class="content-header">
+    <h1>
+        SiteManager
+        <small>list</small>
+        <a target="_blank" href="/tool/multi_site_domain/clear_cache.php"> <button class="btn btn-default" style="color: red">CLEAR CACHE </button></a>
+
+    </h1>
+    <ol class="breadcrumb">
+        <li><a href="#"><i class="fa fa-dashboard"></i> Home</a></li>
+        <li class="active">SiteManager</li>
+    </ol>
+</section>
+
+<!-- Main content -->
+<section class="content" ng-controller="site_mng_index_view">
+
+    <?php
+
+    if(\Base\ClassRoute::getDomainName() == 'disk.com.vn')
+        require_once "application/block/default_index.php";
+    else
+        require_once "application/block/default_index_one_item.php";
+    ?>
+
+    <br>
+    <a target="_blank" href="/tool/multi_site_domain/clear_cache.php"> <button class="" style="color: red">CLEAR CACHE </button></a>
+    <br><br>
+    <a target="_blank" href="/tool/multi_site_domain/"> <button class="btn btn-default">INSERT DATA SAMPLE </button></a>
+</section>
+<!-- /.content -->
+<!-- Main content -->
